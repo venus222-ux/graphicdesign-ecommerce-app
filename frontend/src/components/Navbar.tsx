@@ -4,7 +4,7 @@ import { logoutRequest } from "../api";
 import styles from "./Navbar.module.css";
 
 export default function Navbar() {
-  const { isAuth, initialized, logout, theme, toggleTheme } = useStore();
+  const { isAuth, initialized, logout, theme, toggleTheme, role } = useStore();
   const navigate = useNavigate();
 
   if (!initialized) {
@@ -51,6 +51,17 @@ export default function Navbar() {
               >
                 Dashboard
               </NavLink>
+
+              {isAuth && role === "admin" && (
+                <NavLink
+                  to="/admin/dashboard"
+                  className={({ isActive }) =>
+                    `${styles.link} ${isActive ? styles.activeLink : ""}`
+                  }
+                >
+                  Admin
+                </NavLink>
+              )}
 
               <NavLink
                 to="/profile"
