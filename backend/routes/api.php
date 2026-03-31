@@ -1,9 +1,11 @@
 <?php
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ProductController;
-use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DownloadController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -40,4 +42,13 @@ Route::prefix('admin')->middleware(['jwt.auth'])->group(function () {
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{product}', [ProductController::class, 'update']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+
+    Route::middleware('auth:api')->group(function () {
+        Route::get('/products/{product}/download', [DownloadController::class, 'download']);
+    });
+
+    Route::get('/logs', [AdminController::class, 'logs']);
+    Route::delete('/logs/{id}', [AdminController::class, 'deleteLog']);
+    Route::get('/logs/export', [AdminController::class, 'exportLogs']);
+
 });

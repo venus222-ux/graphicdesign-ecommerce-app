@@ -1,89 +1,100 @@
-// src/store/useAdminStore.ts
 import { create } from "zustand";
 import API from "../api";
 import { toast } from "react-toastify";
-
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-}
-
-interface Product {
-  id: number;
-  title: string;
-  short_description: string;
-  description: string;
-  price: number;
-  asset_type: string;
-  category_id: number;
-  category: Category | null;
-  is_published: boolean;
-}
-
-interface PaginationMeta {
-  current_page: number;
-  last_page: number;
-  per_page: number;
-  total: number;
-  from: number;
-  to: number;
-}
+import type {
+  Category,
+  Product,
+  PaginationMeta,
+  ProductFormData,
+  MongoLog,
+} from "../types";
 
 interface AdminState {
   categories: Category[];
   products: Product[];
+  logs: MongoLog[];
+
   pagination: PaginationMeta | null;
+  paginationLogs: PaginationMeta | null;
+
   isLoadingProducts: boolean;
   isLoadingCategories: boolean;
+  isLoadingLogs: boolean;
+
   searchTerm: string;
+
   currentPage: number;
+  currentPageLogs: number;
+
   perPage: number;
 
-  productForm: Partial<Product>;
+  activeTab: "products" | "logs";
+
+  productForm: ProductFormData;
   editingProduct: Product | null;
 
   fetchCategories: () => Promise<void>;
   fetchProducts: (page?: number, search?: string) => Promise<void>;
+  fetchLogs: (page?: number, search?: string) => Promise<void>;
 
   setSearchTerm: (term: string) => void;
   setCurrentPage: (page: number) => void;
+  setCurrentPageLogs: (page: number) => void;
+
+  setActiveTab: (tab: "products" | "logs") => void;
 
   addCategory: (name: string) => Promise<void>;
   deleteCategory: (id: number) => Promise<void>;
-
   createOrUpdateProduct: () => Promise<void>;
   deleteProduct: (id: number) => Promise<void>;
 
+  deleteLog: (id: string) => Promise<void>;
+  exportLogs: () => Promise<void>;
+
   setEditingProduct: (product: Product | null) => void;
-  updateProductForm: (updates: Partial<Product>) => void;
+  updateProductForm: (updates: Partial<ProductFormData>) => void;
   resetProductForm: () => void;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
   categories: [],
-  products: [], // ← Must start as empty array
+  products: [],
+  logs: [],
+
   pagination: null,
+  paginationLogs: null,
+
   isLoadingProducts: false,
   isLoadingCategories: false,
+  isLoadingLogs: false,
+
   searchTerm: "",
+
   currentPage: 1,
+  currentPageLogs: 1,
+
   perPage: 10,
+
+  activeTab: "products",
 
   productForm: { is_published: false },
   editingProduct: null,
+
+  /* ================= CATEGORIES ================= */
 
   fetchCategories: async () => {
     set({ isLoadingCategories: true });
     try {
       const res = await API.get("/admin/categories");
       set({ categories: res.data || [] });
-    } catch (err) {
+    } catch {
       toast.error("Failed to fetch categories");
     } finally {
       set({ isLoadingCategories: false });
     }
   },
+
+  /* ================= PRODUCTS ================= */
 
   fetchProducts: async (page = 1, search = "") => {
     set({ isLoadingProducts: true });
@@ -92,12 +103,12 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         params: {
           page,
           per_page: get().perPage,
-          search: search || undefined, // don't send empty string
+          search: search || undefined,
         },
       });
 
       set({
-        products: res.data.data || [], // ← Safe fallback
+        products: res.data.data || [],
         pagination: res.data.current_page
           ? {
               current_page: res.data.current_page,
@@ -110,101 +121,268 @@ export const useAdminStore = create<AdminState>((set, get) => ({
           : null,
         currentPage: res.data.current_page || 1,
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       toast.error("Failed to fetch products");
-      set({ products: [], pagination: null }); // ← Reset on error
+      set({ products: [], pagination: null });
     } finally {
       set({ isLoadingProducts: false });
     }
   },
 
-  setSearchTerm: (term) => {
-    set({ searchTerm: term, currentPage: 1 });
-    get().fetchProducts(1, term);
+  /* ================= LOGS ================= */
+
+  fetchLogs: async (page = 1, search = "") => {
+    set({ isLoadingLogs: true });
+    try {
+      const res = await API.get("/admin/logs", {
+        params: {
+          page,
+          per_page: get().perPage,
+          search: search || undefined,
+        },
+      });
+
+      set({
+        logs: res.data.data || [],
+        paginationLogs: res.data.current_page
+          ? {
+              current_page: res.data.current_page,
+              last_page: res.data.last_page,
+              per_page: res.data.per_page,
+              total: res.data.total,
+              from: res.data.from,
+              to: res.data.to,
+            }
+          : null,
+        currentPageLogs: res.data.current_page || 1,
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to fetch upload logs");
+      set({ logs: [], paginationLogs: null });
+    } finally {
+      set({ isLoadingLogs: false });
+    }
   },
+
+  /* ================= LOG ACTIONS ================= */
+
+  deleteLog: async (id: string) => {
+    if (!window.confirm("Delete this upload log?")) return;
+
+    try {
+      await API.delete(`/admin/logs/${id}`);
+      toast.success("Log deleted successfully");
+
+      // handle last item edge case
+      if (get().logs.length === 1 && get().currentPageLogs > 1) {
+        get().fetchLogs(get().currentPageLogs - 1, get().searchTerm);
+      } else {
+        get().fetchLogs(get().currentPageLogs, get().searchTerm);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete log");
+    }
+  },
+
+  exportLogs: async () => {
+    try {
+      const res = await API.get("/admin/logs/export", {
+        responseType: "blob",
+      });
+
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `upload_logs_${new Date().toISOString().slice(0, 10)}.csv`,
+      );
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Logs exported successfully");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to export logs");
+    }
+  },
+
+  /* ================= SEARCH ================= */
+
+  setSearchTerm: (term) => {
+    set({ searchTerm: term });
+
+    if (get().activeTab === "logs") {
+      get().fetchLogs(1, term);
+    } else {
+      get().fetchProducts(1, term);
+    }
+  },
+
+  /* ================= PAGINATION ================= */
 
   setCurrentPage: (page) => {
     set({ currentPage: page });
-    get().fetchProducts(page);
+    get().fetchProducts(page, get().searchTerm);
   },
+
+  setCurrentPageLogs: (page) => {
+    set({ currentPageLogs: page });
+    get().fetchLogs(page, get().searchTerm);
+  },
+
+  /* ================= TAB SWITCH ================= */
+
+  setActiveTab: (tab) => {
+    set({ activeTab: tab, searchTerm: "" });
+
+    if (tab === "logs") {
+      get().fetchLogs(1);
+    } else {
+      get().fetchProducts(1);
+    }
+  },
+
+  /* ================= CATEGORY ================= */
 
   addCategory: async (name: string) => {
     try {
       const res = await API.post("/admin/categories", { name });
-      set((state) => ({ categories: [...state.categories, res.data] }));
+      set((state) => ({
+        categories: [...state.categories, res.data],
+      }));
       toast.success("Category created");
-    } catch (err) {
+    } catch {
       toast.error("Error creating category");
     }
   },
 
   deleteCategory: async (id: number) => {
     if (!window.confirm("Delete this category?")) return;
+
     try {
       await API.delete(`/admin/categories/${id}`);
       set((state) => ({
         categories: state.categories.filter((c) => c.id !== id),
       }));
-      toast.success("Category removed");
-    } catch (err) {
-      toast.error("Category in use or error occurred");
+      toast.success("Category deleted");
+    } catch {
+      toast.error("Error deleting category");
     }
   },
 
+  /* ================= PRODUCTS ACTIONS ================= */
   createOrUpdateProduct: async () => {
-    const { productForm, editingProduct, fetchProducts } = get();
+    const { productForm, editingProduct, currentPage, searchTerm } = get();
+
     try {
+      const formData = new FormData();
+
+      // ✅ ALWAYS send all core fields (very important for update)
+      formData.append("title", productForm.title ?? "");
+      formData.append("short_description", productForm.short_description ?? "");
+      formData.append("description", productForm.description ?? "");
+      formData.append("price", String(productForm.price ?? 0));
+      formData.append("asset_type", productForm.asset_type ?? "");
+      formData.append("category_id", String(productForm.category_id ?? ""));
+
+      // ✅ Laravel boolean fix (CRITICAL)
+      formData.append("is_published", productForm.is_published ? "1" : "0");
+
+      // ✅ Only send files if NEW files selected
+      if (productForm.preview_image instanceof File) {
+        formData.append("preview_image", productForm.preview_image);
+      }
+
+      if (productForm.asset_file instanceof File) {
+        formData.append("asset_file", productForm.asset_file);
+      }
+
+      // 🔥 DEBUG (optional but VERY useful)
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+
       if (editingProduct) {
-        await API.put(`/admin/products/${editingProduct.id}`, productForm);
+        await API.post(
+          `/admin/products/${editingProduct.id}?_method=PUT`,
+          formData,
+          { headers: { "Content-Type": "multipart/form-data" } },
+        );
         toast.success("Product updated successfully");
       } else {
-        await API.post("/admin/products", productForm);
+        await API.post("/admin/products", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
         toast.success("Product created successfully");
       }
-      await fetchProducts();
+
+      await get().fetchProducts(currentPage, searchTerm);
       get().resetProductForm();
     } catch (err: any) {
-      console.error("Product save error:", err.response?.data);
+      console.error(err.response?.data || err);
 
-      // Show better error message from Laravel
-      const errorMessage =
+      const message =
         err.response?.data?.message ||
-        err.response?.data?.errors ||
-        "Failed to save product. Check all required fields.";
+        (err.response?.data?.errors
+          ? Object.values(err.response.data.errors).flat().join(", ")
+          : "Error saving product");
 
-      toast.error(errorMessage);
+      toast.error(message);
     }
   },
-
   deleteProduct: async (id: number) => {
     if (!window.confirm("Delete this product?")) return;
+
     try {
       await API.delete(`/admin/products/${id}`);
-      await get().fetchProducts();
       toast.success("Product deleted");
-    } catch (err) {
-      toast.error("Delete failed");
+
+      get().fetchProducts(get().currentPage, get().searchTerm);
+    } catch {
+      toast.error("Error deleting product");
     }
   },
+
+  /* ================= FORM ================= */
 
   setEditingProduct: (product) => {
     set({
       editingProduct: product,
       productForm: product
-        ? { ...product, category_id: product.category?.id }
+        ? {
+            title: product.title,
+            short_description: product.short_description,
+            description: product.description,
+            price: product.price,
+            asset_type: product.asset_type,
+            category_id: product.category_id,
+            is_published: product.is_published,
+            preview_image: product.preview_url || undefined, // URL string
+            asset_file: product.asset_url || undefined, // URL string
+          }
         : { is_published: false },
     });
   },
 
-  updateProductForm: (updates) =>
+  updateProductForm: (updates) => {
     set((state) => ({
       productForm: { ...state.productForm, ...updates },
-    })),
+    }));
+  },
 
-  resetProductForm: () =>
+  resetProductForm: () => {
     set({
-      editingProduct: null,
       productForm: { is_published: false },
-    }),
+      editingProduct: null,
+    });
+  },
 }));

@@ -1,0 +1,134 @@
+// src/types/index.ts
+
+export type Role = "user" | "moderator" | "admin";
+
+/* ================= USER ================= */
+export const isValidRole = (role: string): role is Role => {
+  return ["user", "moderator", "admin"].includes(role);
+};
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: Role;
+}
+
+/* ================= AUTH ================= */
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  role: Role;
+}
+
+export interface ProfileData {
+  name?: string;
+  email: string;
+  created_at?: string;
+}
+
+export interface ProfileUpdateRequest {
+  email: string;
+  password?: string;
+  password_confirmation?: string;
+}
+
+/* ================= GENERIC ================= */
+
+export interface APIMessageResponse {
+  message: string;
+}
+
+/* ================= CATEGORY ================= */
+
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+/* ================= PRODUCT ================= */
+
+export interface Product {
+  id: number;
+  title: string;
+  short_description: string;
+  description: string;
+  price: number;
+  asset_type: string;
+  category_id: number;
+  category?: Category | null;
+  is_published: boolean;
+  preview_url?: string;
+  asset_url?: string;
+}
+
+/* ================= PRODUCT FORM ================= */
+
+// src/types/index.ts
+export interface ProductFormData {
+  title?: string;
+  short_description?: string;
+  description?: string;
+  price?: number;
+  asset_type?: string;
+  category_id?: number;
+  is_published: boolean; // ✅ required and always boolean
+  preview_image?: File | string | null;
+  asset_file?: File | string | null;
+}
+/* ================= PAGINATION ================= */
+
+export interface PaginationMeta {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+  from: number;
+  to: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+  from: number;
+  to: number;
+}
+
+/* ================= MONGODB UPLOAD LOGS ================= */
+
+export interface MongoLog {
+  _id?: string;
+  product_id: number | string;
+  file_name: string;
+  size: number;
+  mime: string;
+  uploaded_by: number | string;
+  ip: string;
+  user_agent: string;
+  created_at: string;
+}
+
+export interface LogsResponse {
+  data: MongoLog[];
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+  from: number;
+  to: number;
+}

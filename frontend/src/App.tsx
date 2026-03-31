@@ -4,7 +4,7 @@ import Navbar from "./components/Navbar";
 import { ToastContainer } from "react-toastify";
 import { useStore } from "./store/useStore";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { useAuthRestore } from "./store/useAuthRestore"; // ✅ import the hook
+import { useAuthRestore } from "./store/useAuthRestore";
 
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));

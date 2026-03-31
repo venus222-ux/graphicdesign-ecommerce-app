@@ -8,6 +8,9 @@ use App\Http\Requests\UpdateProductRequest;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Events\FileUploaded;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class ProductController extends Controller
 {
@@ -34,37 +37,116 @@ class ProductController extends Controller
     /**
      * Store a newly created product
      */
-public function store(StoreProductRequest $request)
+    public function store(StoreProductRequest $request)
+    {
+        try {
+            Log::info('Store product started', ['data' => $request->validated()]);
+
+            $data = $request->validated();
+            $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
+            $data['user_id'] = auth()->id();
+
+            $product = Product::create($data);
+            Log::info('Product created', ['product_id' => $product->id]);
+
+            // Handle preview image
+            if ($request->hasFile('preview_image')) {
+                $product->addMediaFromRequest('preview_image')->toMediaCollection('preview');
+                Log::info('Preview image saved');
+            }
+
+            // Handle asset file
+            if ($request->hasFile('asset_file')) {
+                $media = $product->addMediaFromRequest('asset_file')->toMediaCollection('asset');
+
+                FileUploaded::dispatch(
+                    $product,
+                    [
+                        'file_name' => $media->file_name,
+                        'size' => $media->size,
+                        'mime' => $media->mime_type,
+                        'path' => $media->getPath(),
+                    ],
+                    auth()->user(),
+                    $request->ip(),
+                    $request->userAgent()
+                );
+                Log::info('Asset file saved and event dispatched');
+            }
+
+            return response()->json($product->load('category'), 201);
+
+        } catch (Throwable $e) {
+            Log::error('Product store failed', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'data' => $request->validated(),
+                'has_preview' => $request->hasFile('preview_image'),
+                'has_asset' => $request->hasFile('asset_file'),
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to create product',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Update an existing product
+     */
+
+    public function update(UpdateProductRequest $request, Product $product)
 {
     $data = $request->validated();
 
-    $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
+    // Force boolean 0/1 for is_published if sent
+    if (isset($data['is_published'])) {
+        $data['is_published'] = $data['is_published'] ? 1 : 0;
+    }
 
-    // Set user_id only if authenticated, otherwise null (now allowed)
-    $data['user_id'] = auth()->check() ? auth()->id() : null;
+    // Update slug if title changes
+    if (isset($data['title']) && $data['title'] !== $product->title) {
+        $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
+    }
 
-    $product = Product::create($data);
+    // Update product
+    $product->update($data);
 
-    return $product->load('category');
+    // Handle preview image
+    if ($request->hasFile('preview_image')) {
+        $product->clearMediaCollection('preview');
+        $product->addMediaFromRequest('preview_image')->toMediaCollection('preview');
+    }
+
+    // Handle asset file
+    if ($request->hasFile('asset_file')) {
+        $product->clearMediaCollection('asset');
+        $media = $product->addMediaFromRequest('asset_file')->toMediaCollection('asset');
+
+        FileUploaded::dispatch(
+            $product,
+            [
+                'file_name' => $media->file_name,
+                'size' => $media->size,
+                'mime' => $media->mime_type,
+                'path' => $media->getPath(),
+            ],
+            auth()->user(),
+            $request->ip(),
+            $request->userAgent()
+        );
+    }
+
+    return response()->json($product->fresh()->load('category'), 200);
 }
-    public function show(Product $product)
-    {
-        return $product->load('category');
-    }
 
-    public function update(UpdateProductRequest $request, Product $product)
-    {
-        $data = $request->validated();
-
-        $product->update($data);
-
-        return $product->load('category');   // better for frontend
-    }
-
+    /**
+     * Delete a product
+     */
     public function destroy(Product $product)
     {
         $product->delete();
-
         return response()->json(['message' => 'Product deleted successfully']);
     }
 }

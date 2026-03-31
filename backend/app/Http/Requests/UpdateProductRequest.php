@@ -6,31 +6,25 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateProductRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
+        return [
+            'title' => 'sometimes|required|string|max:255',
+            'short_description' => 'sometimes|required|string|max:255',
+            'description' => 'sometimes|required|string',
+            'price' => 'sometimes|required|numeric|min:0',
+            'asset_type' => 'sometimes|required|string',
+            'category_id' => 'sometimes|required|exists:categories,id',
+            'is_published' => 'sometimes|boolean',
 
-     return [
-        'title' => 'required|string|max:255',
-        'short_description' => 'required|string|max:255',
-        'description' => 'required|string',
-        'price' => 'required|numeric|min:0',
-        'asset_type' => 'required|string',
-        'category_id' => 'required|exists:categories,id',
-        'is_published' => 'boolean',
-     ];
-
+            // Files
+            'preview_image' => 'nullable|image|max:51200', // 50 MB
+            'asset_file'    => 'nullable|file|max:102400', // 100 MB
+        ];
     }
 }

@@ -1,62 +1,40 @@
 import React, { useEffect, useState } from "react";
 import { useAdminStore } from "../store/useAdminStore";
-import styles from "./AdminDashboard.module.css";
+import styles from "../styles/AdminDashboard.module.css";
 
-// Separate Components
-import DashboardCharts from "../components/Admin/DashboardCharts";
-import ProductForm from "../components/Admin/ProductForm";
 import AdminSidebar from "../components/Admin/AdminSidebar";
-
-import {
-  Plus,
-  Edit3,
-  Trash2,
-  Search,
-  CheckCircle,
-  Circle,
-  X,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import ProductsTab from "../components/Admin/ProductsTab";
+import CategoriesTab from "../components/Admin/CategoriesTab";
+import LogsTab from "../components/Admin/LogsTab";
+import { Search, Download } from "lucide-react";
 
 const AdminDashboard: React.FC = () => {
   const {
-    categories,
-    products,
-    pagination,
-    isLoadingProducts,
-    searchTerm,
-    currentPage,
     fetchCategories,
     fetchProducts,
+    fetchLogs,
+    searchTerm,
     setSearchTerm,
-    setCurrentPage,
-    setEditingProduct,
-    resetProductForm,
-    deleteProduct,
-    addCategory,
-    deleteCategory,
+    exportLogs,
   } = useAdminStore();
 
-  const [activeTab, setActiveTab] = useState<"products" | "categories">(
-    "products",
-  );
-  const [catName, setCatName] = useState("");
+  const [activeTab, setActiveTab] = useState<
+    "products" | "categories" | "logs"
+  >("products");
 
   useEffect(() => {
     fetchCategories();
     fetchProducts(1);
   }, [fetchCategories, fetchProducts]);
 
-  const handlePageChange = (newPage: number) => {
-    if (newPage < 1 || (pagination && newPage > pagination.last_page)) return;
-    setCurrentPage(newPage);
-    fetchProducts(newPage);
-  };
+  useEffect(() => {
+    if (activeTab === "logs") {
+      fetchLogs(1, searchTerm);
+    }
+  }, [activeTab, fetchLogs, searchTerm]);
 
   return (
     <div className={styles.appWrapper}>
-      {/* --- SIDEBAR COMPONENT --- */}
       <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <div className={styles.mainContainer}>
@@ -64,11 +42,21 @@ const AdminDashboard: React.FC = () => {
           <div className={styles.searchBox}>
             <Search size={18} />
             <input
-              placeholder="Search database..."
+              placeholder={
+                activeTab === "logs"
+                  ? "Search by file name..."
+                  : "Search database..."
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          {activeTab === "logs" && (
+            <button onClick={exportLogs} className={styles.exportBtn}>
+              <Download size={18} />
+              <span>Export CSV</span>
+            </button>
+          )}
         </header>
 
         <main className={styles.content}>
@@ -76,171 +64,20 @@ const AdminDashboard: React.FC = () => {
             <h1>
               {activeTab === "products"
                 ? "Inventory Overview"
-                : "Category Management"}
+                : activeTab === "categories"
+                  ? "Category Management"
+                  : "MongoDB Upload Logs"}
             </h1>
-            <p>Real-time control over your marketplace assets.</p>
+            <p>
+              {activeTab === "logs"
+                ? "Track all asset uploads."
+                : "Real-time control over assets."}
+            </p>
           </div>
 
-          {activeTab === "products" && <DashboardCharts products={products} />}
-
-          <div className={styles.dashboardGrid}>
-            <div className={styles.inventorySection}>
-              <div className={styles.glassCard}>
-                <div className={styles.cardHeader}>
-                  <h3>
-                    {activeTab === "products"
-                      ? "Product List"
-                      : "All Categories"}
-                  </h3>
-                  {activeTab === "products" && (
-                    <button
-                      onClick={() => {
-                        setEditingProduct(null);
-                        resetProductForm();
-                      }}
-                      className={styles.addSmallBtn}
-                    >
-                      <Plus size={16} /> New Product
-                    </button>
-                  )}
-                </div>
-
-                <div className={styles.tableArea}>
-                  {activeTab === "products" ? (
-                    isLoadingProducts ? (
-                      <div className={styles.skeletonLoader}>
-                        Loading products...
-                      </div>
-                    ) : (
-                      <table className={styles.table}>
-                        <thead>
-                          <tr>
-                            <th>Title</th>
-                            <th>Category</th>
-                            <th>Price</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {products.map((p) => (
-                            <tr key={p.id}>
-                              <td>
-                                <strong>{p.title}</strong>
-                              </td>
-                              <td>
-                                <span className={styles.catBadge}>
-                                  {p.category?.name || "None"}
-                                </span>
-                              </td>
-                              <td>${p.price}</td>
-                              <td>
-                                {p.is_published ? (
-                                  <span className={styles.statusOn}>
-                                    <CheckCircle size={14} /> Active
-                                  </span>
-                                ) : (
-                                  <span className={styles.statusOff}>
-                                    <Circle size={14} /> Draft
-                                  </span>
-                                )}
-                              </td>
-                              <td className={styles.actions}>
-                                <button
-                                  onClick={() => setEditingProduct(p)}
-                                  className={styles.editBtn}
-                                >
-                                  <Edit3 size={16} />
-                                </button>
-                                <button
-                                  onClick={() => deleteProduct(p.id)}
-                                  className={styles.deleteBtn}
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )
-                  ) : (
-                    <div className={styles.categoryGrid}>
-                      {categories.map((c) => (
-                        <div key={c.id} className={styles.categoryCard}>
-                          <span>{c.name}</span>
-                          <Trash2
-                            size={14}
-                            onClick={() => deleteCategory(c.id)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Pagination (Simplified) */}
-                {activeTab === "products" &&
-                  pagination &&
-                  pagination.last_page > 1 && (
-                    <div className={styles.paginationWrapper}>
-                      <div className={styles.pagination}>
-                        <button
-                          disabled={currentPage === 1}
-                          onClick={() => handlePageChange(currentPage - 1)}
-                          className={styles.pArrow}
-                        >
-                          <ChevronLeft size={18} />
-                        </button>
-                        <span className={styles.pNum}>
-                          {currentPage} / {pagination.last_page}
-                        </span>
-                        <button
-                          disabled={currentPage === pagination.last_page}
-                          onClick={() => handlePageChange(currentPage + 1)}
-                          className={styles.pArrow}
-                        >
-                          <ChevronRight size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-              </div>
-            </div>
-
-            <aside className={styles.sideControls}>
-              <ProductForm />
-
-              <div className={styles.glassCard}>
-                <h3>Quick Categories</h3>
-                <form
-                  className={styles.inlineForm}
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    addCategory(catName);
-                    setCatName("");
-                  }}
-                >
-                  <input
-                    placeholder="New name..."
-                    value={catName}
-                    onChange={(e) => setCatName(e.target.value)}
-                  />
-                  <button type="submit">
-                    <Plus size={18} />
-                  </button>
-                </form>
-                <div className={styles.tagList}>
-                  {categories.map((c) => (
-                    <span key={c.id} className={styles.tag}>
-                      {c.name}{" "}
-                      <X size={12} onClick={() => deleteCategory(c.id)} />
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </aside>
-          </div>
+          {activeTab === "products" && <ProductsTab />}
+          {activeTab === "categories" && <CategoriesTab />}
+          {activeTab === "logs" && <LogsTab />}
         </main>
       </div>
     </div>

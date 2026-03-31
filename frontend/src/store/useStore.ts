@@ -1,94 +1,90 @@
+// src/store/useStore.ts
 import { create } from "zustand";
-import API from "../api";
+import { persist } from "zustand/middleware";
+import type { Role, User } from "../types";
 
-interface AppState {
-  isAuth: boolean;
+interface StoreState {
   token: string | null;
-  role: string | null;
-  theme: "light" | "dark";
+  role: Role | null;
+  user: User | null;
+  isAuth: boolean;
   initialized: boolean;
+  theme: "light" | "dark";
 
   setAuth: (token: string, role: string) => void;
+  setUser: (user: User) => void;
   logout: () => void;
-  setToken: (token: string | null) => void;
-  toggleTheme: () => void;
   setInitialized: (value: boolean) => void;
-
+  toggleTheme: () => void;
   startTokenRefreshLoop: () => void;
-  stopTokenRefreshLoop: () => void;
 }
 
-export const useStore = create<AppState>((set, get) => {
-  let intervalId: ReturnType<typeof setInterval> | null = null;
+export const useStore = create<StoreState>()(
+  persist(
+    (set) => ({
+      // ← Changed to (set) only — no unused 'get'
+      token: null,
+      role: null,
+      user: null,
+      isAuth: false,
+      initialized: false,
+      theme: "light",
 
-  return {
-    isAuth: false,
-    token: null,
-    role: null,
-    initialized: false,
-    theme: (localStorage.getItem("theme") as "light" | "dark") || "light",
+      setAuth: (token: string, role: string) => {
+        const validRole: Role | null = ["user", "moderator", "admin"].includes(
+          role,
+        )
+          ? (role as Role)
+          : null;
 
-    setAuth: (token, role) =>
-      set({
-        isAuth: true,
-        token,
-        role,
+        set({
+          token,
+          role: validRole,
+          isAuth: !!validRole && !!token,
+        });
+      },
+
+      setUser: (user: User) => set({ user }),
+
+      logout: () =>
+        set({
+          token: null,
+          role: null,
+          user: null,
+          isAuth: false,
+        }),
+
+      setInitialized: (value: boolean) => set({ initialized: value }),
+
+      toggleTheme: () =>
+        set((state) => ({
+          theme: state.theme === "light" ? "dark" : "light",
+        })),
+
+      // Token refresh loop (ready for future implementation)
+      startTokenRefreshLoop: () => {
+        console.log("🔄 Token refresh loop started");
+
+        // TODO: Add your real refresh logic here later
+        // Example:
+        // const interval = setInterval(async () => {
+        //   try {
+        //     const res = await refreshToken();
+        //     useStore.getState().setAuth(res.data.token, res.data.role);
+        //   } catch {
+        //     useStore.getState().logout();
+        //   }
+        // }, 14 * 60 * 1000);
+      },
+    }),
+    {
+      name: "app-storage",
+      partialize: (state) => ({
+        token: state.token,
+        role: state.role,
+        user: state.user,
+        theme: state.theme,
       }),
-
-    logout: () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-
-      set({
-        isAuth: false,
-        token: null,
-        role: null,
-      });
     },
-
-    setToken: (token) =>
-      set((state) => ({
-        token,
-        isAuth: !!token,
-        role: token ? state.role : null,
-      })),
-
-    toggleTheme: () => {
-      set((state) => {
-        const newTheme = state.theme === "light" ? "dark" : "light";
-        localStorage.setItem("theme", newTheme);
-        document.documentElement.setAttribute("data-bs-theme", newTheme);
-        return { theme: newTheme };
-      });
-    },
-
-    setInitialized: (value) => set({ initialized: value }),
-
-    stopTokenRefreshLoop: () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-    },
-
-    startTokenRefreshLoop: () => {
-      if (intervalId) return;
-
-      const refreshInterval = 1000 * 60 * 10; // 10 min
-
-      intervalId = setInterval(async () => {
-        try {
-          const res = await API.post("/refresh");
-          const { token, role } = res.data;
-
-          get().setAuth(token, role);
-        } catch (err) {
-          console.error("Failed to refresh token:", err);
-          get().logout();
-        }
-      }, refreshInterval);
-    },
-  };
-});
+  ),
+);

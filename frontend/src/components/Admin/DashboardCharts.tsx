@@ -1,6 +1,11 @@
+// src/components/Admin/DashboardCharts.tsx
+
 import React, { useMemo } from "react";
 import { Bar, Pie } from "react-chartjs-2";
-import styles from "../../pages/AdminDashboard.module.css";
+import styles from "../../styles/AdminDashboard.module.css";
+import type { Product as ProductType } from "../../types"; // ← Import from types
+
+// Register Chart.js components
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,7 +17,6 @@ import {
   ArcElement,
 } from "chart.js";
 
-// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -23,15 +27,8 @@ ChartJS.register(
   Legend,
 );
 
-interface Product {
-  id: number;
-  is_published: boolean;
-  category?: { name: string };
-  // add other fields as necessary
-}
-
 interface DashboardChartsProps {
-  products: Product[];
+  products: ProductType[]; // ← Use the imported type
 }
 
 const DashboardCharts: React.FC<DashboardChartsProps> = ({ products }) => {
@@ -40,7 +37,9 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ products }) => {
     const draft = products.length - published;
 
     const catCounts: Record<string, number> = {};
+
     products.forEach((p) => {
+      // Safe handling for category that can be null or undefined
       const name = p.category?.name || "Uncategorized";
       catCounts[name] = (catCounts[name] || 0) + 1;
     });

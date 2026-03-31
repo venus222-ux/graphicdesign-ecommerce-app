@@ -1,4 +1,5 @@
 /* 1. Root Variables & Reset */
+/*src/styles/Adi*/
 :root {
   --primary: #6366f1;
   --primary-dark: #4f46e5;
@@ -113,17 +114,17 @@
 }
 
 .topBar {
-  height: 64px;
+  height: 70px; /* Slightly taller for breathing room */
   background: var(--white);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
+  justify-content: space-between; /* Space between Search and Export */
   padding: 0 2rem;
   position: sticky;
   top: 0;
   z-index: 10;
 }
-
 .searchBox {
   display: flex;
   align-items: center;
@@ -539,4 +540,206 @@
   .chartsGrid {
     grid-template-columns: 1fr; /* Stack charts on smaller screens */
   }
+}
+
+/* New Log-Specific Enhancements */
+
+.headerInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.countBadge {
+  background: #eef2ff;
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* File info Layout */
+.fileInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fileIcon {
+  color: var(--text-muted);
+}
+
+.fileName {
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 0.9rem;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.productId {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+/* Cell Typography */
+.dateTimeCell {
+  display: flex;
+  flex-direction: column;
+}
+
+.primaryText {
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.secondaryText {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* MIME Badges */
+.mimeBadge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.mimeImage {
+  background: #dcfce7;
+  color: #166534;
+}
+.mimePdf {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.mimeZip {
+  background: #fef9c3;
+  color: #854d0e;
+}
+.mimeDefault {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* Origin Info */
+.originInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ipAddress {
+  font-size: 0.8rem;
+  font-family: monospace;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.userLabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Actions */
+.actionsCell {
+  text-align: right;
+}
+
+/* Summary Sidebar */
+.summaryTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+  color: var(--primary);
+}
+
+.statList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.statItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--border);
+}
+
+.infoBox {
+  margin-top: 1.5rem;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 4rem 0;
+  color: var(--text-muted);
+}
+
+.emptyState p {
+  margin-top: 1rem;
+  font-weight: 500;
+}
+.exportBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--white);
+  color: var(--text-dark);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: auto; /* Pushes it to the right of the header */
+}
+
+.exportBtn svg {
+  color: var(--primary); /* The Lucide icon will be blue */
+  transition: transform 0.2s ease;
+}
+
+.exportBtn:hover {
+  background-color: #f8fafc;
+  border-color: var(--primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.exportBtn:hover svg {
+  transform: translateY(1px); /* Subtle "downloading" animation */
+}
+
+.exportBtn:active {
+  background-color: #f1f5f9;
+  transform: scale(0.98);
+}
+
+/* Optional: Loading state if your store supports it */
+.exportBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(1);
 }
