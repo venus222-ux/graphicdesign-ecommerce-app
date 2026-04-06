@@ -5,7 +5,9 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\DownloadController;
+use App\Http\Controllers\Admin\DownloadController;
+use App\Http\Controllers\Product\PublicProductController;
+use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -52,3 +54,10 @@ Route::prefix('admin')->middleware(['jwt.auth'])->group(function () {
     Route::get('/logs/export', [AdminController::class, 'exportLogs']);
 
 });
+
+
+// PUBLIC SHOP PAGE MARKETPLACE
+Route::get('/products', [PublicProductController::class, 'index']);
+Route::get('/products/{slug}', [PublicProductController::class, 'show']);
+//Dedicated Search Endpoint
+Route::get('/search', [SearchController::class, 'search']);

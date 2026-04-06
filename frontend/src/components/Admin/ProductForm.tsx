@@ -24,16 +24,15 @@ const ProductForm: React.FC = () => {
     createOrUpdateProduct,
   } = useAdminStore();
 
-  // Local preview URL for image to avoid memory leaks
+  // Single image preview
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Refs for drag & drop areas
+  // Drag & drop refs and states
   const imageDropRef = useRef<HTMLDivElement>(null);
   const assetDropRef = useRef<HTMLDivElement>(null);
   const [imageDragActive, setImageDragActive] = useState(false);
   const [assetDragActive, setAssetDragActive] = useState(false);
 
-  // Update preview URL when preview_image or editingProduct changes
   useEffect(() => {
     if (productForm.preview_image instanceof File) {
       const url = URL.createObjectURL(productForm.preview_image);
@@ -56,6 +55,7 @@ const ProductForm: React.FC = () => {
     resetProductForm();
   };
 
+  // Single preview image
   const handleImageFile = useCallback(
     (file: File | undefined) => {
       if (file && file.type.startsWith("image/")) {
@@ -67,16 +67,37 @@ const ProductForm: React.FC = () => {
     [updateProductForm],
   );
 
+  // Multiple images
+  const handleImageFiles = useCallback(
+    (file: File | undefined) => {
+      if (!file) return;
+      if (file.type.startsWith("image/")) {
+        updateProductForm({
+          preview_images: [...(productForm.preview_images || []), file],
+        });
+      } else {
+        alert("Please upload only image files.");
+      }
+    },
+    [updateProductForm, productForm.preview_images],
+  );
+
+  const removeNewImage = (index: number) => {
+    const updatedFiles = [...(productForm.preview_images || [])];
+    updatedFiles.splice(index, 1);
+    updateProductForm({
+      preview_images: updatedFiles.length > 0 ? updatedFiles : null,
+    });
+  };
+
+  // Asset file
   const handleAssetFile = useCallback(
     (file: File | undefined) => {
-      if (file) {
-        updateProductForm({ asset_file: file });
-      }
+      if (file) updateProductForm({ asset_file: file });
     },
     [updateProductForm],
   );
 
-  // Drag & drop handlers
   const handleDragOver = (
     e: React.DragEvent,
     setActive: React.Dispatch<React.SetStateAction<boolean>>,
@@ -104,18 +125,11 @@ const ProductForm: React.FC = () => {
     e.stopPropagation();
     setActive(false);
     const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      onFile(files[0]);
-    }
+    if (files.length > 0) onFile(files[0]);
   };
 
-  const removeImage = () => {
-    updateProductForm({ preview_image: null });
-  };
-
-  const removeAsset = () => {
-    updateProductForm({ asset_file: null });
-  };
+  const removeImage = () => updateProductForm({ preview_image: null });
+  const removeAsset = () => updateProductForm({ asset_file: null });
 
   return (
     <div className={dashStyles.glassCard}>
@@ -183,7 +197,7 @@ const ProductForm: React.FC = () => {
           </div>
         </div>
 
-        {/* DETAILS (Improved Section) */}
+        {/* DETAILS */}
         <div className={productStyles.formSection}>
           <label className={productStyles.fieldLabel}>Details</label>
           <div className={productStyles.detailsCard}>
@@ -254,7 +268,7 @@ const ProductForm: React.FC = () => {
           </div>
 
           <div className={productStyles.fileGrid}>
-            {/* Preview Image Upload */}
+            {/* Single Preview Image */}
             <div className={productStyles.uploadBox}>
               <label>Preview Image</label>
               <div
@@ -296,7 +310,115 @@ const ProductForm: React.FC = () => {
               </div>
             </div>
 
-            {/* Asset File Upload */}
+            {/* Multiple Preview Images */}
+            <div className={productStyles.uploadBox}>
+              <label>
+                Preview Images <small>(Multiple)</small>
+              </label>
+              <div
+                className={`${productStyles.dropzone} ${
+                  imageDragActive ? productStyles.dropzoneActive : ""
+                }`}
+                onDragOver={(e) => handleDragOver(e, setImageDragActive)}
+                onDragLeave={(e) => handleDragLeave(e, setImageDragActive)}
+                onDrop={(e) =>
+                  handleDrop(e, setImageDragActive, handleImageFiles)
+                }
+              >
+                {/* Existing */}
+                {editingProduct?.preview_urls?.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      flexWrap: "wrap",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    {editingProduct.preview_urls.map((url, i) => (
+                      <img
+                        key={i}
+                        src={url}
+                        alt={`Existing ${i}`}
+                        style={{
+                          width: "80px",
+                          height: "80px",
+                          objectFit: "cover",
+                          borderRadius: "8px",
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+                {/* New */}
+                {productForm.preview_images?.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      flexWrap: "wrap",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    {productForm.preview_images.map((file: File, i: number) => (
+                      <div key={i} style={{ position: "relative" }}>
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`New ${i}`}
+                          style={{
+                            width: "80px",
+                            height: "80px",
+                            objectFit: "cover",
+                            borderRadius: "8px",
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeNewImage(i)}
+                          style={{
+                            position: "absolute",
+                            top: -6,
+                            right: -6,
+                            background: "red",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "50%",
+                            width: "20px",
+                            height: "20px",
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className={productStyles.uploadPlaceholder}>
+                  <FiImage size={32} />
+                  <span>Drag & drop or click to upload multiple images</span>
+                  <small>PNG, JPG, WEBP, GIF up to 5MB each</small>
+                </div>
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    updateProductForm({
+                      preview_images: [
+                        ...(productForm.preview_images || []),
+                        ...files.filter((f) => f.type.startsWith("image/")),
+                      ],
+                    });
+                  }}
+                  className={productStyles.fileInput}
+                />
+              </div>
+            </div>
+
+            {/* Asset File */}
             <div className={productStyles.uploadBox}>
               <label>Asset File</label>
               <div
@@ -332,12 +454,9 @@ const ProductForm: React.FC = () => {
                   <div className={productStyles.fileInfo}>
                     <FiFile size={24} />
                     <div>
-                      <strong>Current file attached</strong>
-                      <small>from existing product</small>
+                      <strong>Existing File</strong>
+                      <small>Attached previously</small>
                     </div>
-                    <span className={productStyles.fileStatusTag}>
-                      Existing
-                    </span>
                   </div>
                 ) : (
                   <div className={productStyles.uploadPlaceholder}>

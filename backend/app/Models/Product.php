@@ -34,29 +34,37 @@ class Product extends Model implements HasMedia
         return $this->belongsTo(User::class, 'user_id');
     }
 
-        public function registerMediaCollections(): void
+    public function registerMediaCollections(): void
     {
-        $this
-            ->addMediaCollection('preview')
-            ->singleFile();
-
-        $this
-            ->addMediaCollection('asset');
+        $this->addMediaCollection('previews')
+             ->useDisk('public')           // or 's3' etc.
+             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+             ->singleFile(false);          // allow multiple
     }
 
-    public function getPreviewUrlAttribute()
-    {
-       return $this->getFirstMediaUrl('preview');
-    }
+// Return first preview image
+public function getPreviewUrlAttribute(): ?string
+{
+    $media = $this->getMedia('previews')->first();
+    return $media ? asset('storage/' . $media->id . '/' . $media->file_name) : null;
+}
 
-    public function getAssetUrlAttribute()
-    {
-        return $this->getFirstMediaUrl('asset');
-    }
-
+// Return all preview images
+public function getPreviewUrlsAttribute(): array
+{
+    return $this->getMedia('previews')
+                ->map(fn($m) => asset('storage/' . $m->id . '/' . $m->file_name))
+                ->toArray();
+}
     protected $casts = [
        'is_published' => 'boolean',
     ];
 
 
 }
+
+
+/**
+ * preview_url → prima imagine (pentru compatibilitate cu vechiul cod).
+*preview_urls → array cu toate imaginile, pentru slider și shop page.
+ */

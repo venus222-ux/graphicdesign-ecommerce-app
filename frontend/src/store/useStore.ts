@@ -1,4 +1,3 @@
-// src/store/useStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Role, User } from "../types";
@@ -22,7 +21,6 @@ interface StoreState {
 export const useStore = create<StoreState>()(
   persist(
     (set) => ({
-      // ← Changed to (set) only — no unused 'get'
       token: null,
       role: null,
       user: null,
@@ -31,16 +29,18 @@ export const useStore = create<StoreState>()(
       theme: "light",
 
       setAuth: (token: string, role: string) => {
+        // 🔥 normalize role: lowercase + trim
+        const normalizedRole = role?.toLowerCase().trim();
         const validRole: Role | null = ["user", "moderator", "admin"].includes(
-          role,
+          normalizedRole,
         )
-          ? (role as Role)
+          ? (normalizedRole as Role)
           : null;
 
         set({
           token,
           role: validRole,
-          isAuth: !!validRole && !!token,
+          isAuth: !!token && !!validRole,
         });
       },
 
@@ -61,20 +61,9 @@ export const useStore = create<StoreState>()(
           theme: state.theme === "light" ? "dark" : "light",
         })),
 
-      // Token refresh loop (ready for future implementation)
       startTokenRefreshLoop: () => {
         console.log("🔄 Token refresh loop started");
-
-        // TODO: Add your real refresh logic here later
-        // Example:
-        // const interval = setInterval(async () => {
-        //   try {
-        //     const res = await refreshToken();
-        //     useStore.getState().setAuth(res.data.token, res.data.role);
-        //   } catch {
-        //     useStore.getState().logout();
-        //   }
-        // }, 14 * 60 * 1000);
+        // aici poți adăuga logica reală de refresh token
       },
     }),
     {

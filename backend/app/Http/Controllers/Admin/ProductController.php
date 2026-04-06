@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use App\Events\FileUploaded;
 use Illuminate\Support\Facades\Log;
 use Throwable;
+use App\Services\ProductSearchService;
 
 class ProductController extends Controller
 {
@@ -37,67 +38,72 @@ class ProductController extends Controller
     /**
      * Store a newly created product
      */
-    public function store(StoreProductRequest $request)
-    {
-        try {
-            Log::info('Store product started', ['data' => $request->validated()]);
+  public function store(StoreProductRequest $request, ProductSearchService $searchService)
+{
+    try {
+        Log::info('Store product started', ['data' => $request->validated()]);
 
-            $data = $request->validated();
-            $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
-            $data['user_id'] = auth()->id();
+        $data = $request->validated();
+        $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
+        $data['user_id'] = auth()->id();
 
-            $product = Product::create($data);
-            Log::info('Product created', ['product_id' => $product->id]);
+        $product = Product::create($data);
+        Log::info('Product created', ['product_id' => $product->id]);
 
-            // Handle preview image
-            if ($request->hasFile('preview_image')) {
-                $product->addMediaFromRequest('preview_image')->toMediaCollection('preview');
-                Log::info('Preview image saved');
-            }
-
-            // Handle asset file
-            if ($request->hasFile('asset_file')) {
-                $media = $product->addMediaFromRequest('asset_file')->toMediaCollection('asset');
-
-                FileUploaded::dispatch(
-                    $product,
-                    [
-                        'file_name' => $media->file_name,
-                        'size' => $media->size,
-                        'mime' => $media->mime_type,
-                        'path' => $media->getPath(),
-                    ],
-                    auth()->user(),
-                    $request->ip(),
-                    $request->userAgent()
-                );
-                Log::info('Asset file saved and event dispatched');
-            }
-
-            return response()->json($product->load('category'), 201);
-
-        } catch (Throwable $e) {
-            Log::error('Product store failed', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'data' => $request->validated(),
-                'has_preview' => $request->hasFile('preview_image'),
-                'has_asset' => $request->hasFile('asset_file'),
-            ]);
-
-            return response()->json([
-                'message' => 'Failed to create product',
-                'error' => $e->getMessage(),
-            ], 500);
+        // Handle multiple preview images
+        if ($request->hasFile('preview_images')) {
+            $product->addMultipleMediaFromRequest(['preview_images'])
+                    ->each(function ($fileAdder) {
+                        $fileAdder->toMediaCollection('previews');
+                    });
+            Log::info('Multiple preview images saved');
         }
+
+        // Handle asset file (single)
+        if ($request->hasFile('asset_file')) {
+            $media = $product->addMediaFromRequest('asset_file')->toMediaCollection('asset');
+
+            FileUploaded::dispatch(
+                $product,
+                [
+                    'file_name' => $media->file_name,
+                    'size' => $media->size,
+                    'mime' => $media->mime_type,
+                    'path' => $media->getPath(),
+                ],
+                auth()->user(),
+                $request->ip(),
+                $request->userAgent()
+            );
+            Log::info('Asset file saved and event dispatched');
+        }
+
+        $searchService->index($product);
+
+        return response()->json($product->load('category'), 201);
+
+    } catch (Throwable $e) {
+        Log::error('Product store failed', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'data' => $request->validated(),
+            'has_previews' => $request->hasFile('preview_images'),
+            'has_asset' => $request->hasFile('asset_file'),
+        ]);
+
+        return response()->json([
+            'message' => 'Failed to create product',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
 
     /**
      * Update an existing product
      */
 
-    public function update(UpdateProductRequest $request, Product $product)
-{
+  public function update(UpdateProductRequest $request, Product $product, ProductSearchService $searchService)
+  {
     $data = $request->validated();
 
     // Force boolean 0/1 for is_published if sent
@@ -113,13 +119,16 @@ class ProductController extends Controller
     // Update product
     $product->update($data);
 
-    // Handle preview image
-    if ($request->hasFile('preview_image')) {
-        $product->clearMediaCollection('preview');
-        $product->addMediaFromRequest('preview_image')->toMediaCollection('preview');
+    // Handle multiple preview images (replace all)
+    if ($request->hasFile('preview_images')) {
+        $product->clearMediaCollection('previews');
+        $product->addMultipleMediaFromRequest(['preview_images'])
+                ->each(function ($fileAdder) {
+                    $fileAdder->toMediaCollection('previews');
+                });
     }
 
-    // Handle asset file
+    // Handle asset file (replace existing)
     if ($request->hasFile('asset_file')) {
         $product->clearMediaCollection('asset');
         $media = $product->addMediaFromRequest('asset_file')->toMediaCollection('asset');
@@ -138,15 +147,18 @@ class ProductController extends Controller
         );
     }
 
-    return response()->json($product->fresh()->load('category'), 200);
-}
+    // Reindex in search
+    $searchService->index($product);
 
+    return response()->json($product->fresh()->load('category'), 200);
+  }
     /**
      * Delete a product
      */
-    public function destroy(Product $product)
+    public function destroy(Product $product, ProductSearchService $searchService)
     {
         $product->delete();
+        $searchService->delete($product->id);
         return response()->json(['message' => 'Product deleted successfully']);
     }
 }

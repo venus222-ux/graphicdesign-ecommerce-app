@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useStore } from "../store/useStore";
@@ -8,12 +8,10 @@ import styles from "./Login.module.css";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const navigate = useNavigate();
-  const setAuth = useStore((state) => state.setAuth);
-  const startTokenRefreshLoop = useStore(
-    (state) => state.startTokenRefreshLoop,
-  );
+
+  const { setAuth, startTokenRefreshLoop, isAuth, role, initialized } =
+    useStore();
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -26,31 +24,21 @@ export default function Login() {
       startTokenRefreshLoop();
 
       toast.success("Welcome back! 👋");
-
-      navigate(role === "admin" ? "/admin/dashboard" : "/dashboard");
     } catch (err: any) {
       console.error(err);
-
-      let msg = "Login failed. Please try again.";
-
-      if (err.response) {
-        // The request was made and the server responded with a status code outside 2xx
-        if (err.response.status === 401) {
-          msg = "The credentials are incorrect.";
-        } else if (err.response.data?.message) {
-          msg = err.response.data.message;
-        }
-      } else if (err.request) {
-        // Request was made but no response received
-        msg = "Network error. Please check your connection.";
-      } else {
-        // Something else happened
-        msg = err.message || msg;
-      }
-
-      toast.error(msg);
+      toast.error(err.response?.data?.message || "Login failed");
     }
   };
+
+  // 🔥 Redirect după login / restore
+  useEffect(() => {
+    if (!initialized) return; // așteaptă restore
+    if (!isAuth) return;
+
+    navigate(role === "admin" ? "/admin/dashboard" : "/dashboard");
+  }, [isAuth, role, initialized, navigate]);
+
+  if (!initialized) return <div>Loading...</div>;
 
   return (
     <div className={styles.wrapper}>
@@ -94,7 +82,6 @@ export default function Login() {
           <Link to="/register" className={styles.link}>
             Create account
           </Link>
-
           <Link to="/forgot-password" className={styles.link}>
             Forgot password?
           </Link>

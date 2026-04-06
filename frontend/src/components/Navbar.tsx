@@ -1,7 +1,7 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useStore } from "../store/useStore";
 import { logoutRequest } from "../api";
-import styles from "./Navbar.module.css";
+import styles from "../styles/Navbar.module.css";
 
 export default function Navbar() {
   const { isAuth, initialized, logout, theme, toggleTheme, role } = useStore();
@@ -41,6 +41,14 @@ export default function Navbar() {
         </Link>
 
         <div className={styles.navGroup}>
+          <NavLink
+            to="/shop"
+            className={({ isActive }) =>
+              `${styles.link} ${isActive ? styles.activeLink : ""}`
+            }
+          >
+            Shop
+          </NavLink>
           {isAuth ? (
             <>
               <NavLink

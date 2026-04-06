@@ -1,4 +1,3 @@
-// hooks/useAuthRestore.ts
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useStore } from "../store/useStore";
@@ -22,21 +21,28 @@ export const useAuthRestore = () => {
     );
 
     if (isPublic) {
-      setInitialized(true); // ✅ important: set initialized to true on public routes
+      setInitialized(true);
       return;
     }
 
     const restore = async () => {
       try {
         const res = await refreshToken();
-        setAuth(res.data.token, res.data.role);
+
+        // 🔥 normalize role
+        const role = res.data.role?.toLowerCase().trim();
+
+        console.log("🔄 RESTORED TOKEN:", res.data.token);
+        console.log("🔄 RESTORED ROLE:", role);
+
+        setAuth(res.data.token, role);
         startTokenRefreshLoop();
       } catch (err: any) {
         if (err.response?.status === 401) {
           logout();
         }
       } finally {
-        setInitialized(true); // ✅ always set initialized after the attempt
+        setInitialized(true);
       }
     };
 

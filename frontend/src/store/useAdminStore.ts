@@ -351,7 +351,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       toast.error("Error deleting product");
     }
   },
-
   /* ================= FORM ================= */
 
   setEditingProduct: (product) => {
@@ -366,13 +365,18 @@ export const useAdminStore = create<AdminState>((set, get) => ({
             asset_type: product.asset_type,
             category_id: product.category_id,
             is_published: product.is_published,
-            preview_image: product.preview_url || undefined, // URL string
-            asset_file: product.asset_url || undefined, // URL string
+
+            // 🔥 IMPORTANT
+            preview_images: null, // ONLY for new uploads
+
+            asset_file: product.asset_url || undefined,
           }
-        : { is_published: false },
+        : {
+            is_published: false,
+            preview_images: null,
+          },
     });
   },
-
   updateProductForm: (updates) => {
     set((state) => ({
       productForm: { ...state.productForm, ...updates },
@@ -381,7 +385,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   resetProductForm: () => {
     set({
-      productForm: { is_published: false },
+      productForm: { is_published: false, preview_images: null },
       editingProduct: null,
     });
   },

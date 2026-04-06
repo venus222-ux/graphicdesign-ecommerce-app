@@ -10,29 +10,32 @@ class UserSeeder extends Seeder
 {
     public function run()
     {
-        // Reset all normal users, but keep admin
-        DB::table('users')->where('email', '!=', 'admin@example.com')->delete();
+        // Delete normal users but keep admin
+        DB::table('users')
+            ->where('email', '!=', 'admin@example.com')
+            ->delete();
 
-        // Create normal users
-        User::factory()->create([
-            'name' => 'Alice Smith',
-            'email' => 'alice@example.com',
-            'password' => bcrypt('password123'),
-        ]);
+        // Create specific normal users
+        $users = [
+            ['name' => 'Alice Smith', 'email' => 'alice@example.com'],
+            ['name' => 'Bob Johnson', 'email' => 'bob@example.com'],
+            ['name' => 'Charlie Davis', 'email' => 'charlie@example.com'],
+        ];
 
-        User::factory()->create([
-            'name' => 'Bob Johnson',
-            'email' => 'bob@example.com',
-            'password' => bcrypt('password123'),
-        ]);
+        foreach ($users as $data) {
+            $user = User::factory()->create([
+                'name'     => $data['name'],
+                'email'    => $data['email'],
+                'password' => bcrypt('password123'),
+            ]);
 
-        User::factory()->create([
-            'name' => 'Charlie Davis',
-            'email' => 'charlie@example.com',
-            'password' => bcrypt('password123'),
-        ]);
+            $user->assignRole('user'); // ← assign normal role
+        }
 
-        // More normal users via factory
-        User::factory(7)->create();
+        // Create 7 extra random users
+        $extraUsers = User::factory(7)->create();
+        foreach ($extraUsers as $user) {
+            $user->assignRole('user');
+        }
     }
 }

@@ -71,7 +71,9 @@ export interface Product {
   category?: Category | null;
   is_published: boolean;
   preview_url?: string;
+  preview_urls: string[];
   asset_url?: string;
+  slug: string;
 }
 
 /* ================= PRODUCT FORM ================= */
@@ -85,8 +87,14 @@ export interface ProductFormData {
   asset_type?: string;
   category_id?: number;
   is_published: boolean; // ✅ required and always boolean
-  preview_image?: File | string | null;
-  asset_file?: File | string | null;
+  // Single image (optional)
+  preview_image?: File | string;
+
+  // 🔹 Multiple images support
+  preview_images?: File[] | string[] | null;
+
+  // Asset file
+  asset_file?: File | string;
 }
 /* ================= PAGINATION ================= */
 

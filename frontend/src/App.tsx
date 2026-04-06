@@ -15,6 +15,8 @@ const ForgotPassword = lazy(() => import("./pages/ForgetPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const Shop = lazy(() => import("./pages/Shop"));
+const ProductDetails = lazy(() => import("./pages/ProductDetails"));
 
 const AuthBootstrap = () => {
   useAuthRestore(); // runs the auth restoration logic
@@ -45,27 +47,33 @@ const App = () => {
         >
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/products/:slug" element={<ProductDetails />} />
             <Route
               path="/login"
               element={
-                !isAuth ? (
+                !initialized ? (
+                  <div>Loading...</div>
+                ) : !isAuth ? (
                   <Login />
                 ) : role === "admin" ? (
-                  <Navigate to="/admin/dashboard" />
+                  <Navigate to="/admin/dashboard" replace />
                 ) : (
-                  <Navigate to="/dashboard" />
+                  <Navigate to="/dashboard" replace />
                 )
               }
             />
             <Route
               path="/register"
               element={
-                !isAuth ? (
+                !initialized ? (
+                  <div>Loading...</div>
+                ) : !isAuth ? (
                   <Register />
                 ) : role === "admin" ? (
-                  <Navigate to="/admin/dashboard" />
+                  <Navigate to="/admin/dashboard" replace />
                 ) : (
-                  <Navigate to="/dashboard" />
+                  <Navigate to="/dashboard" replace />
                 )
               }
             />

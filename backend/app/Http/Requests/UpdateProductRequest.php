@@ -23,7 +23,7 @@ class UpdateProductRequest extends FormRequest
             'is_published' => 'sometimes|boolean',
 
             // Files
-            'preview_image' => 'nullable|image|max:51200', // 50 MB
+            'preview_images.*' => 'nullable|image|mimes:jpeg,png,webp,gif|max:5120', // 5MB each
             'asset_file'    => 'nullable|file|max:102400', // 100 MB
         ];
     }

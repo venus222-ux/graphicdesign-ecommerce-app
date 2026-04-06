@@ -4,6 +4,8 @@ namespace App\Providers;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Cache\RateLimiting\Limit;
+use App\Models\Product;
+use App\Observers\ProductObserver;
 
 use Illuminate\Support\ServiceProvider;
 
@@ -28,5 +30,7 @@ RateLimiter::for('api', function (Request $request) {
     }
     return Limit::perMinute(30)->by($request->ip());
 });
+
+Product::observe(ProductObserver::class);
 }
 }
