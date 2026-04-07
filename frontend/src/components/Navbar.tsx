@@ -2,13 +2,28 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useStore } from "../store/useStore";
 import { logoutRequest } from "../api";
 import styles from "../styles/Navbar.module.css";
+import { useEffect, useState } from "react";
 
 export default function Navbar() {
   const { isAuth, initialized, logout, theme, toggleTheme, role } = useStore();
   const navigate = useNavigate();
 
+  const [categories, setCategories] = useState<
+    { name: string; slug: string }[]
+  >([]);
+  const [open, setOpen] = useState(false);
+
+  // ✅ FIX: hook sus, nu după return
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((res) => res.json())
+      .then((data) => {
+        setCategories(data.data || data || []);
+      })
+      .catch((err) => console.error("Failed to load categories", err));
+  }, []);
+
   if (!initialized) {
-    // optional: show empty navbar, spinner, or skeleton
     return (
       <div
         className={`${styles.navWrapper} ${theme === "dark" ? styles.dark : ""}`}
@@ -41,14 +56,41 @@ export default function Navbar() {
         </Link>
 
         <div className={styles.navGroup}>
-          <NavLink
-            to="/shop"
-            className={({ isActive }) =>
-              `${styles.link} ${isActive ? styles.activeLink : ""}`
-            }
+          {/* ✅ DROPDOWN */}
+          <div
+            className={styles.dropdown}
+            onMouseEnter={() => setOpen(true)}
+            onMouseLeave={() => setOpen(false)}
           >
-            Shop
-          </NavLink>
+            <span className={styles.link}>Shop ▾</span>
+
+            {open && (
+              <div className={styles.dropdownMenu}>
+                {/* ✅ All products MUTAT AICI */}
+                <Link
+                  to="/shop"
+                  className={styles.dropdownItem}
+                  onClick={() => setOpen(false)}
+                >
+                  All Products
+                </Link>
+
+                <hr />
+
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.slug}
+                    to={`/category/${cat.slug}`}
+                    className={styles.dropdownItem}
+                    onClick={() => setOpen(false)}
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
           {isAuth ? (
             <>
               <NavLink
@@ -60,7 +102,7 @@ export default function Navbar() {
                 Dashboard
               </NavLink>
 
-              {isAuth && role === "admin" && (
+              {role === "admin" && (
                 <NavLink
                   to="/admin/dashboard"
                   className={({ isActive }) =>

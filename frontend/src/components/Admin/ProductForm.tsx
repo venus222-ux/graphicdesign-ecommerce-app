@@ -32,6 +32,7 @@ const ProductForm: React.FC = () => {
   const assetDropRef = useRef<HTMLDivElement>(null);
   const [imageDragActive, setImageDragActive] = useState(false);
   const [assetDragActive, setAssetDragActive] = useState(false);
+  const previewImages = productForm.preview_images ?? [];
 
   useEffect(() => {
     if (productForm.preview_image instanceof File) {
@@ -326,7 +327,7 @@ const ProductForm: React.FC = () => {
                 }
               >
                 {/* Existing */}
-                {editingProduct?.preview_urls?.length > 0 && (
+                {editingProduct?.preview_urls && (
                   <div
                     style={{
                       display: "flex",
@@ -335,23 +336,27 @@ const ProductForm: React.FC = () => {
                       marginBottom: "12px",
                     }}
                   >
-                    {editingProduct.preview_urls.map((url, i) => (
-                      <img
-                        key={i}
-                        src={url}
-                        alt={`Existing ${i}`}
-                        style={{
-                          width: "80px",
-                          height: "80px",
-                          objectFit: "cover",
-                          borderRadius: "8px",
-                        }}
-                      />
-                    ))}
+                    {(Array.isArray(editingProduct.preview_urls)
+                      ? editingProduct.preview_urls
+                      : [editingProduct.preview_urls]
+                    ) // transformăm string într-un array
+                      .map((url: string, i: number) => (
+                        <img
+                          key={i}
+                          src={url}
+                          alt={`Existing ${i}`}
+                          style={{
+                            width: "80px",
+                            height: "80px",
+                            objectFit: "cover",
+                            borderRadius: "8px",
+                          }}
+                        />
+                      ))}
                   </div>
                 )}
                 {/* New */}
-                {productForm.preview_images?.length > 0 && (
+                {(productForm.preview_images?.length ?? 0) > 0 && (
                   <div
                     style={{
                       display: "flex",
@@ -360,7 +365,7 @@ const ProductForm: React.FC = () => {
                       marginBottom: "12px",
                     }}
                   >
-                    {productForm.preview_images.map((file: File, i: number) => (
+                    {previewImages.map((file, i) => (
                       <div key={i} style={{ position: "relative" }}>
                         <img
                           src={URL.createObjectURL(file)}

@@ -65,13 +65,13 @@ export interface Product {
   title: string;
   short_description: string;
   description: string;
-  price: number;
+  price?: number;
   asset_type: string;
   category_id: number;
-  category?: Category | null;
+  category?: { name: string } | null;
   is_published: boolean;
   preview_url?: string;
-  preview_urls: string[];
+  preview_urls?: string[] | string | null; // ✅ aici am schimbat
   asset_url?: string;
   slug: string;
 }
@@ -88,13 +88,13 @@ export interface ProductFormData {
   category_id?: number;
   is_published: boolean; // ✅ required and always boolean
   // Single image (optional)
-  preview_image?: File | string;
+  preview_image?: File | string | null;
 
   // 🔹 Multiple images support
-  preview_images?: File[] | string[] | null;
+  preview_images?: File[] | null;
 
   // Asset file
-  asset_file?: File | string;
+  asset_file?: File | string | null;
 }
 /* ================= PAGINATION ================= */
 

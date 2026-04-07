@@ -59,80 +59,6 @@
   gap: 24px;
 }
 
-/* Product Card - Refined Elevate effect */
-.card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 20px;
-  padding: 12px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.card:hover {
-  border-color: #2563eb;
-  transform: translateY(-8px);
-  box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.05),
-    0 10px 10px -5px rgba(0, 0, 0, 0.02);
-}
-
-.imageContainer {
-  width: 100%;
-  aspect-ratio: 4/3;
-  background: #f9fafb;
-  border-radius: 14px;
-  overflow: hidden;
-  margin-bottom: 16px;
-  position: relative;
-}
-
-.productImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease;
-}
-
-.card:hover .productImg {
-  transform: scale(1.05);
-}
-
-.badge {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #2563eb;
-  background: rgba(37, 99, 235, 0.08);
-  padding: 4px 10px;
-  border-radius: 6px;
-  width: fit-content;
-}
-
-.productTitle {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 12px 0 4px 0;
-  line-height: 1.4;
-}
-
-.cardFooter {
-  margin-top: auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 16px;
-}
-
-.price {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #111827;
-}
-
 /* Buttons */
 .primaryBtn {
   background: #2563eb;
@@ -165,13 +91,6 @@
 .secondaryBtn:hover {
   background: #f9fafb;
   border-color: #d1d5db;
-}
-
-.detailsLink {
-  color: #2563eb;
-  font-weight: 600;
-  font-size: 0.875rem;
-  text-decoration: none;
 }
 
 /* Skeleton Pulse */
@@ -211,6 +130,6 @@
     padding: 0 20px;
   }
   aside {
-    display: none; /* Usually hidden or moved to a drawer on mobile */
+    display: none;
   }
 }

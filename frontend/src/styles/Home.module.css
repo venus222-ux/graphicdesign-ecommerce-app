@@ -1,0 +1,94 @@
+/* Typography & Gradients */
+.text-gradient {
+  background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Hero Container */
+.heroContainer {
+  background: radial-gradient(
+    circle at 10% 30%,
+    rgba(99, 102, 241, 0.05) 0%,
+    rgba(168, 85, 247, 0.02) 100%
+  );
+  border-radius: 2rem;
+  margin-top: 1rem;
+}
+
+/* Search Bar */
+.searchWrapper {
+  max-width: 600px;
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.05));
+}
+
+.searchIcon {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Tag Badges */
+.tagBadge {
+  padding: 6px 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 40px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.tagBadge:hover {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: white;
+  transform: scale(0.96);
+}
+
+/* Category Cards */
+.categoryCard {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(2px);
+  border: 1px solid rgba(229, 231, 235, 0.6);
+  padding: 24px 16px;
+  border-radius: 24px;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  text-align: center;
+}
+
+.categoryCard:hover {
+  transform: translateY(-6px);
+  border-color: #6366f1;
+  box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+.categoryCardSkeleton {
+  background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+  background-size: 200% 100%;
+  animation: 1.5s shine linear infinite;
+  border-radius: 20px;
+  height: 120px;
+}
+
+@keyframes shine {
+  to {
+    background-position-x: -200%;
+  }
+}
+
+/* Newsletter Section */
+.newsletterSection {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  border-radius: 32px;
+  overflow: hidden;
+  margin-top: 4rem;
+  box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.2);
+}

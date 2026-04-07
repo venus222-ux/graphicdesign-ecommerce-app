@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import API from "../api";
@@ -23,33 +23,29 @@ const ProductDetails = () => {
   });
 
   const [currentIndex, setCurrentIndex] = useState(0);
-
   const previews: string[] = (() => {
     if (!product) return [];
 
-    // dacă este array
-    if (
-      Array.isArray(product.preview_urls) &&
-      product.preview_urls.length > 0
-    ) {
-      return product.preview_urls;
+    // 1️⃣ Dacă e array
+    if (Array.isArray(product.preview_urls)) {
+      return product.preview_urls.map(String);
     }
 
-    // dacă este string JSON
-    if (
-      typeof product.preview_urls === "string" &&
-      product.preview_urls.length > 0
-    ) {
-      try {
-        const parsed = JSON.parse(product.preview_urls);
-        if (Array.isArray(parsed)) return parsed;
-        return [];
-      } catch {
-        return [];
+    // 2️⃣ Dacă e string JSON
+    if (typeof product.preview_urls === "string") {
+      const trimmed = product.preview_urls.trim();
+      if (trimmed !== "") {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) return parsed.map(String);
+          return [];
+        } catch {
+          return [];
+        }
       }
     }
 
-    // fallback la preview_url
+    // 3️⃣ fallback la preview_url simplu
     return product.preview_url ? [product.preview_url] : [];
   })();
   const nextSlide = () =>

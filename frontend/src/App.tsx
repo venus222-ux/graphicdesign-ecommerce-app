@@ -5,6 +5,7 @@ import { ToastContainer } from "react-toastify";
 import { useStore } from "./store/useStore";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuthRestore } from "./store/useAuthRestore";
+import CategoryPage from "./pages/CategoryPage";
 
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
@@ -49,6 +50,7 @@ const App = () => {
             <Route path="/" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/products/:slug" element={<ProductDetails />} />
+            <Route path="/category/:slug" element={<CategoryPage />} />
             <Route
               path="/login"
               element={
