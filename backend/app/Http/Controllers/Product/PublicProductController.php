@@ -27,13 +27,25 @@ class PublicProductController extends Controller
             ]);
     }
 
-    public function show($slug)
-    {
-        $product = Product::with('category')
-            ->where('slug', $slug)
-            ->where('is_published', true)
-            ->firstOrFail();
+public function show($slug)
+{
+    $product = Product::with('category')
+        ->where('slug', $slug)
+        ->where('is_published', true)
+        ->firstOrFail();
 
-        return new ProductResource($product);
-    }
+    // Load related products manually
+    $relatedProducts = Product::with('category')
+        ->where('category_id', $product->category_id)
+        ->where('id', '!=', $product->id)
+        ->where('is_published', true)
+        ->latest()
+        ->take(4)
+        ->get();
+
+    // Attach as a relationship so whenLoaded() works
+    $product->setRelation('relatedProducts', $relatedProducts); //"fake-load" the relationship.
+
+    return new ProductResource($product);
+}
 }

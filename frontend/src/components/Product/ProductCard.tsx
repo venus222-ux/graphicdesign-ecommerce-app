@@ -7,7 +7,25 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  const previewUrl = product.preview_url;
+  const previewUrl = (() => {
+    if (
+      Array.isArray(product.preview_urls) &&
+      product.preview_urls.length > 0
+    ) {
+      return product.preview_urls[0];
+    }
+
+    if (typeof product.preview_urls === "string") {
+      try {
+        const parsed = JSON.parse(product.preview_urls);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed[0];
+        }
+      } catch {}
+    }
+
+    return product.preview_url;
+  })();
   const categoryName = product.category?.name || "Asset";
 
   return (

@@ -9,15 +9,24 @@ const Shop = () => {
   const { isAuth } = useStore();
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useProducts();
+
   const observerRef = useRef<HTMLDivElement | null>(null);
 
+  // Flatten all pages into a single array
+  const products = data?.pages.flatMap((page) => page.data) || [];
+  const totalResults = data?.pages[0]?.total ?? 0;
+
+  // Infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasNextPage) fetchNextPage();
+        if (entries[0].isIntersecting && hasNextPage) {
+          fetchNextPage();
+        }
       },
       { threshold: 0.5 },
     );
+
     if (observerRef.current) observer.observe(observerRef.current);
     return () => observer.disconnect();
   }, [hasNextPage, fetchNextPage]);
@@ -41,49 +50,68 @@ const Shop = () => {
 
         <main>
           <h2 className={styles.sectionTitle}>
-            {data?.pages[0]?.total
-              ? `${data.pages[0].total} results found`
-              : "Latest Drops"}
+            {totalResults > 0
+              ? `${totalResults} results found`
+              : "No products found"}
           </h2>
 
-          <div className={styles.productGrid}>
-            {isLoading
-              ? Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className={`${styles.card} ${styles.skeleton}`}>
-                    <div className={styles.imageContainer} />
-                    <div
-                      style={{
-                        height: "14px",
-                        width: "40%",
-                        background: "#eee",
-                        borderRadius: "4px",
-                      }}
-                    />
-                    <div
-                      className="mt-3"
-                      style={{
-                        height: "20px",
-                        width: "80%",
-                        background: "#eee",
-                        borderRadius: "4px",
-                      }}
-                    />
-                  </div>
-                ))
-              : data?.pages.map((page) =>
-                  page.data.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  )),
-                )}
-          </div>
+          {isLoading && (
+            <div className={styles.productGrid}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className={`${styles.card} ${styles.skeleton}`}>
+                  <div className={styles.imageContainer} />
+                  <div
+                    style={{
+                      height: "14px",
+                      width: "40%",
+                      background: "#eee",
+                      borderRadius: "4px",
+                    }}
+                  />
+                  <div
+                    className="mt-3"
+                    style={{
+                      height: "20px",
+                      width: "80%",
+                      background: "#eee",
+                      borderRadius: "4px",
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
-          <div ref={observerRef} className="text-center py-5">
-            {isFetchingNextPage && (
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-            )}
-          </div>
+          {!isLoading && products.length > 0 && (
+            <div className={styles.productGrid}>
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
+
+          {!isLoading && totalResults === 0 && (
+            <div
+              className="text-center py-5 text-muted"
+              style={{ fontSize: "1.2rem" }}
+            >
+              <span>😕 No products match your search or filters.</span>
+              <p className="mt-2">
+                Try adjusting your search term or clearing some filters.
+              </p>
+            </div>
+          )}
+
+          {/* Infinite Scroll Loader */}
+          {products.length > 0 && (
+            <div ref={observerRef} className="text-center py-5">
+              {isFetchingNextPage && (
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+              )}
+            </div>
+          )}
         </main>
       </div>
     </div>

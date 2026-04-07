@@ -55,6 +55,17 @@ class ProductResource extends JsonResource
             'preview_url'       => $previewUrl,
             'preview_urls'      => $previewUrls ?: ($previewUrl ? [$previewUrl] : []),
             'score'             => null,
+
+            // ✅ Related products (same category)
+            'related_products' => ProductCardResource::collection(
+               $this->whenLoaded('relatedProducts')
+            ),
         ];
     }
 }
+
+
+/***
+ * whenLoaded() ensures no extra queries are run inside the resource
+ * — only returns data for relationships you explicitly loaded.
+ */

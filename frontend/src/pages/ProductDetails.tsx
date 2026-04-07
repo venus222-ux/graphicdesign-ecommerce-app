@@ -1,293 +1,184 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import API from "../api";
 import { Product } from "../types";
-import styles from "../styles/Shop.module.css";
+import styles from "../styles/ProductDetails.module.css";
+import ProductCard from "../components/Product/ProductCard";
 
 const ProductDetails = () => {
   const { slug } = useParams<{ slug: string }>();
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  // ✅ Accesăm corect res.data.data
+  // 1. Data Fetching
   const {
     data: product,
     isLoading,
     isError,
-  } = useQuery<Product>({
+  } = useQuery<Product & { related_products?: Product[] }>({
     queryKey: ["product", slug],
     queryFn: async () => {
       const res = await API.get(`/products/${slug}`);
-      return res.data.data; // ← corect
+      return res.data.data;
     },
     enabled: !!slug,
   });
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const previews: string[] = (() => {
+  // 2. Memoized Image Logic (Cleans up the render block)
+  const previews = useMemo((): string[] => {
     if (!product) return [];
+    const raw = product.preview_urls;
 
-    // 1️⃣ Dacă e array
-    if (Array.isArray(product.preview_urls)) {
-      return product.preview_urls.map(String);
-    }
+    if (Array.isArray(raw)) return raw.map(String);
 
-    // 2️⃣ Dacă e string JSON
-    if (typeof product.preview_urls === "string") {
-      const trimmed = product.preview_urls.trim();
-      if (trimmed !== "") {
-        try {
-          const parsed = JSON.parse(trimmed);
-          if (Array.isArray(parsed)) return parsed.map(String);
-          return [];
-        } catch {
-          return [];
-        }
+    if (typeof raw === "string" && raw.trim() !== "") {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.map(String);
+      } catch (e) {
+        return [raw]; // Fallback if string is just a single URL
       }
     }
-
-    // 3️⃣ fallback la preview_url simplu
     return product.preview_url ? [product.preview_url] : [];
-  })();
+  }, [product]);
+
+  // 3. Handlers
   const nextSlide = () =>
     setCurrentIndex((prev) => (prev + 1) % previews.length);
   const prevSlide = () =>
     setCurrentIndex((prev) => (prev - 1 + previews.length) % previews.length);
 
-  if (isLoading) {
-    return (
-      <div className={styles.pageWrapper}>
-        <div className="container py-5 text-center">
-          <div className="spinner-border text-primary" role="status"></div>
-          <p className="mt-3 text-muted">Loading premium asset...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isError || !product) {
-    return (
-      <div className={styles.pageWrapper}>
-        <div className="container py-5 text-center">
-          <h1 className="display-1">404</h1>
-          <h2 className="mb-4">Asset Not Found</h2>
-          <p className="text-muted mb-5">
-            The product you're looking for might have been removed or doesn't
-            exist.
-          </p>
-          <Link to="/" className={styles.primaryBtn}>
-            Back to Marketplace
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // 4. Guard Clauses (Loading/Error States)
+  if (isLoading) return <LoadingState />;
+  if (isError || !product) return <ErrorState />;
 
   return (
     <div className={styles.pageWrapper}>
       <div className="container py-4">
-        {/* Breadcrumb */}
-        <nav aria-label="breadcrumb" className="mb-4">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item">
-              <Link to="/">Marketplace</Link>
-            </li>
-            <li className="breadcrumb-item active">
-              {product.category?.name || "Digital Asset"}
-            </li>
-          </ol>
+        {/* Breadcrumb - Subtle & Clean */}
+        <nav className="mb-4 small">
+          <Link to="/" className="text-decoration-none text-muted">
+            Marketplace
+          </Link>
+          <span className="mx-2 text-muted">/</span>
+          <span className="text-primary fw-medium">
+            {product.category?.name || "Asset"}
+          </span>
         </nav>
 
-        <div className="row g-5">
-          {/* Left Column: Image Slider */}
+        <div className="row g-lg-5">
+          {/* Left: Gallery Section */}
           <div className="col-lg-7">
-            <div
-              className={styles.imageContainer}
-              style={{
-                position: "relative",
-                borderRadius: "24px",
-                overflow: "hidden",
-                minHeight: "450px",
-              }}
-            >
+            <div className={styles.mainImageWrapper}>
               {previews.length > 0 ? (
                 <>
-                  <img
-                    src={previews[currentIndex]}
-                    alt={`${product.title} - ${currentIndex + 1}`}
-                    className="img-fluid"
-                    style={{
-                      width: "100%",
-                      height: "auto",
-                      maxHeight: "520px",
-                      objectFit: "cover",
-                      borderRadius: "24px",
-                    }}
-                  />
-
-                  {/* Navigation Arrows */}
-                  {previews.length > 1 && (
-                    <>
-                      <button
-                        onClick={prevSlide}
-                        style={{
-                          position: "absolute",
-                          left: "15px",
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          background: "rgba(0,0,0,0.5)",
-                          color: "white",
-                          border: "none",
-                          width: "40px",
-                          height: "40px",
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          zIndex: 10,
-                        }}
-                      >
-                        ←
-                      </button>
-                      <button
-                        onClick={nextSlide}
-                        style={{
-                          position: "absolute",
-                          right: "15px",
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          background: "rgba(0,0,0,0.5)",
-                          color: "white",
-                          border: "none",
-                          width: "40px",
-                          height: "40px",
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          zIndex: 10,
-                        }}
-                      >
-                        →
-                      </button>
-                    </>
-                  )}
-
-                  {/* Dots */}
-                  {previews.length > 1 && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: "15px",
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        display: "flex",
-                        gap: "8px",
-                      }}
-                    >
-                      {previews.map((_, idx) => (
+                  <div className={styles.featuredImageContainer}>
+                    <img
+                      src={previews[currentIndex]}
+                      alt={product.title}
+                      className={styles.mainDisplayImage}
+                    />
+                    {previews.length > 1 && (
+                      <>
                         <button
-                          key={idx}
-                          onClick={() => setCurrentIndex(idx)}
-                          style={{
-                            width: "10px",
-                            height: "10px",
-                            borderRadius: "50%",
-                            background:
-                              idx === currentIndex
-                                ? "#fff"
-                                : "rgba(255,255,255,0.6)",
-                            border: "none",
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
+                          onClick={prevSlide}
+                          className={styles.navBtnPrev}
+                        >
+                          ‹
+                        </button>
+                        <button
+                          onClick={nextSlide}
+                          className={styles.navBtnNext}
+                        >
+                          ›
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Thumbnail Strip */}
+                  <div className="d-flex gap-2 mt-3 overflow-auto pb-2">
+                    {previews.map((url, idx) => (
+                      <img
+                        key={idx}
+                        src={url}
+                        onClick={() => setCurrentIndex(idx)}
+                        className={`${styles.thumb} ${idx === currentIndex ? styles.thumbActive : ""}`}
+                        alt="thumbnail"
+                      />
+                    ))}
+                  </div>
                 </>
               ) : (
-                <div
-                  className="text-muted d-flex flex-column align-items-center"
-                  style={{ justifyContent: "center", minHeight: "450px" }}
-                >
-                  <span style={{ fontSize: "3rem" }}>🖼️</span>
-                  <span>No Preview Available</span>
+                <div className={styles.noImagePlaceholder}>
+                  No Image Provided
                 </div>
               )}
             </div>
           </div>
 
-          {/* Right Column: Details & Actions */}
+          {/* Right: Purchase & Info Section */}
           <div className="col-lg-5">
-            <div className="ps-lg-4">
+            <div className="sticky-top" style={{ top: "2rem" }}>
               <span
-                className="badge bg-soft-primary text-primary mb-2"
-                style={{ backgroundColor: "#e0e7ff", padding: "8px 12px" }}
+                className="badge rounded-pill px-3 py-2 mb-3"
+                style={{
+                  backgroundColor: "rgba(13, 110, 253, 0.1)",
+                  color: "#0d6efd",
+                }}
               >
-                {product.asset_type || "Premium"}
+                {product.asset_type || "Digital Asset"}
               </span>
 
-              <h1 className="display-5 fw-bold mb-3">{product.title}</h1>
-
-              <p className="lead text-secondary mb-4">
+              <h1 className="fw-bold mb-2">{product.title}</h1>
+              <p className="text-muted fs-5 mb-4">
                 {product.short_description}
               </p>
 
-              {/* Pricing */}
-              <div
-                className="p-4 rounded-4 mb-4"
-                style={{
-                  backgroundColor: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                }}
-              >
-                <div className="d-flex align-items-center justify-content-between mb-3">
-                  <span className="text-muted fw-medium">Price</span>
-                  <h2
-                    className={styles.priceTag}
-                    style={{ margin: 0, fontSize: "2.5rem" }}
-                  >
-                    ${product.price}
-                  </h2>
+              <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div className="card-body p-4">
+                  <div className="d-flex justify-content-between align-items-end mb-4">
+                    <div>
+                      <small className="text-uppercase text-muted fw-bold ls-1">
+                        Price
+                      </small>
+                      <h2 className="mb-0 fw-bold text-dark">
+                        ${product.price}
+                      </h2>
+                    </div>
+                    <div className="text-end">
+                      <span className="text-success small fw-medium">
+                        ● Instant Access
+                      </span>
+                    </div>
+                  </div>
+
+                  <button className="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm mb-3">
+                    Download Now
+                  </button>
+
+                  <div className="d-flex justify-content-center gap-3 small text-muted">
+                    <span>✓ Secure Payment</span>
+                    <span>✓ Verified Asset</span>
+                  </div>
                 </div>
-
-                <button
-                  className={`${styles.primaryBtn} w-100 py-3 mb-2 border-0`}
-                  style={{ fontSize: "1.1rem" }}
-                >
-                  Buy Now
-                </button>
-                <p className="text-center text-muted x-small mt-2 mb-0">
-                  <small>Secure checkout • Instant digital delivery</small>
-                </p>
               </div>
 
-              {/* Full Description */}
-              <div className="mt-5">
-                <h5 className="fw-bold border-bottom pb-2 mb-3">
-                  About this asset
-                </h5>
-                <p
-                  className="text-secondary"
-                  style={{ lineHeight: "1.8", whiteSpace: "pre-line" }}
-                >
-                  {product.description}
-                </p>
-              </div>
-
-              {/* Technical Specs */}
-              <div className="row g-3 mt-4">
+              {/* Quick Specs Grid */}
+              <div className="row g-2 mb-4">
                 <div className="col-6">
-                  <div className="p-3 border rounded-3 bg-white">
-                    <small className="d-block text-muted">Category</small>
-                    <span className="fw-semibold">
-                      {product.category?.name || "Uncategorized"}
+                  <div className="p-3 bg-light rounded-3 border">
+                    <small className="text-muted d-block">Format</small>
+                    <span className="fw-bold text-uppercase">
+                      {product.asset_type || "N/A"}
                     </span>
                   </div>
                 </div>
                 <div className="col-6">
-                  <div className="p-3 border rounded-3 bg-white">
-                    <small className="d-block text-muted">Format</small>
-                    <span className="fw-semibold">
-                      {product.asset_type?.toUpperCase() || "ZIP"}
+                  <div className="p-3 bg-light rounded-3 border">
+                    <small className="text-muted d-block">Category</small>
+                    <span className="fw-bold">
+                      {product.category?.name || "General"}
                     </span>
                   </div>
                 </div>
@@ -295,9 +186,50 @@ const ProductDetails = () => {
             </div>
           </div>
         </div>
+
+        {/* Bottom Section: Description */}
+        <div className="row mt-5">
+          <div className="col-lg-7">
+            <h4 className="fw-bold mb-4">Description</h4>
+            <div className={`${styles.descriptionBody} text-secondary`}>
+              {product.description}
+            </div>
+          </div>
+        </div>
+
+        {/* Related Products Section */}
+        {product?.related_products?.length && (
+          <div className="mt-5 pt-5 border-top">
+            <h4 className="fw-bold mb-4">Recommended for you</h4>
+            <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+              {product.related_products.map((item) => (
+                <div className="col" key={item.id}>
+                  <ProductCard product={item} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+// Sub-components for cleaner code
+const LoadingState = () => (
+  <div className="container py-5 text-center">
+    <div className="spinner-border text-primary" role="status" />
+    <p className="mt-3">Loading product details...</p>
+  </div>
+);
+
+const ErrorState = () => (
+  <div className="container py-5 text-center">
+    <h3>Oops! Asset not found.</h3>
+    <Link to="/" className="btn btn-outline-primary mt-3">
+      Return to Store
+    </Link>
+  </div>
+);
 
 export default ProductDetails;

@@ -3,20 +3,20 @@ import API from "../api";
 import { useMarketplaceStore } from "../store/useMarketplaceStore";
 import { useDebounce } from "./useDebounce";
 
-// 👉 tip pentru Laravel pagination (RECOMANDAT)
-type LaravelPagination<T> = {
+// Type for ES pagination response
+type ESPagination<T> = {
   data: T[];
   current_page: number;
-  next_page_url: string | null;
+  last_page: number;
+  per_page: number;
   total: number;
 };
 
 export const useProducts = () => {
   const filters = useMarketplaceStore();
-
   const debouncedSearch = useDebounce(filters.search, 400);
 
-  return useInfiniteQuery({
+  return useInfiniteQuery<ESPagination<any>>({
     queryKey: [
       "products",
       debouncedSearch,
@@ -27,10 +27,9 @@ export const useProducts = () => {
       filters.sort,
     ],
 
-    // ✅ OBLIGATORIU în v5
     initialPageParam: 1,
 
-    queryFn: async ({ pageParam }) => {
+    queryFn: async ({ pageParam = 1 }) => {
       const res = await API.get("/search", {
         params: {
           page: pageParam,
@@ -43,17 +42,17 @@ export const useProducts = () => {
         },
       });
 
-      return res.data as LaravelPagination<any>;
+      return res.data as ESPagination<any>;
     },
 
     getNextPageParam: (lastPage) => {
-      return lastPage.next_page_url ? lastPage.current_page + 1 : undefined;
+      return lastPage.current_page < lastPage.last_page
+        ? lastPage.current_page + 1
+        : undefined;
     },
 
-    // 🧠 CACHE STRATEGY (PRO LEVEL)
-    staleTime: 1000 * 60 * 2, // 2 min → nu refetch
-    gcTime: 1000 * 60 * 10, // 10 min → cache ținut în memorie
-
+    staleTime: 1000 * 60 * 2, // 2 min
+    gcTime: 1000 * 60 * 10, // 10 min
     refetchOnWindowFocus: false,
   });
 };
