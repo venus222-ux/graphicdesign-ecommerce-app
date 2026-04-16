@@ -11,7 +11,14 @@ export interface User {
   name: string;
   email: string;
   role: Role;
+  created_at: string;
+  roles?: { name: string }[];
 }
+
+export type Props = {
+  users: User[];
+  onDelete: (id: number) => void;
+};
 
 /* ================= AUTH ================= */
 
@@ -36,6 +43,11 @@ export interface ProfileData {
   name?: string;
   email: string;
   created_at?: string;
+}
+export interface FormData {
+  email: string;
+  password: string;
+  password_confirmation: string;
 }
 
 export interface ProfileUpdateRequest {

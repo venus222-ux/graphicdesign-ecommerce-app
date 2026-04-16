@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\MongoLog;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
@@ -115,4 +116,25 @@ class AdminController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+        //Read and Delete Users
+    public function users()
+{
+    // Return users with their roles (using Spatie)
+    $users = User::with('roles')->get();
+    return response()->json($users);
+}
+
+public function deleteUser($id)
+{
+    $user = User::findOrFail($id);
+
+    // Prevent admin from deleting themselves
+    if ($user->id === auth()->id()) {
+        return response()->json(['message' => 'Cannot delete your own account'], 403);
+    }
+
+    $user->delete();
+    return response()->json(['message' => 'User deleted successfully']);
+}
 }

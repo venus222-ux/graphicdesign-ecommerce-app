@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Cache\RateLimiting\Limit;
 use App\Models\Product;
 use App\Observers\ProductObserver;
+use App\Models\User;
+use App\Observers\UserObserver;
 
 use Illuminate\Support\ServiceProvider;
 
@@ -32,5 +34,7 @@ RateLimiter::for('api', function (Request $request) {
 });
 
 Product::observe(ProductObserver::class);
+User::observe(UserObserver::class);
+
 }
 }

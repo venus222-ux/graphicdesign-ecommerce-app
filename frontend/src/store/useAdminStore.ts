@@ -13,6 +13,7 @@ interface AdminState {
   categories: Category[];
   products: Product[];
   logs: MongoLog[];
+  users: any[]; // 👈 ADDED (or replace with User type if you have it)
 
   pagination: PaginationMeta | null;
   paginationLogs: PaginationMeta | null;
@@ -54,12 +55,18 @@ interface AdminState {
   setEditingProduct: (product: Product | null) => void;
   updateProductForm: (updates: Partial<ProductFormData>) => void;
   resetProductForm: () => void;
+
+  // 👇 USERS (ADDED)
+  setUsers: (users: any[]) => void;
+  fetchUsers: () => Promise<void>;
+  deleteUser: (id: number) => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
   categories: [],
   products: [],
   logs: [],
+  users: [], // 👈 ADDED
 
   pagination: null,
   paginationLogs: null,
@@ -79,6 +86,37 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   productForm: { is_published: false },
   editingProduct: null,
+
+  /* ================= USERS ================= */
+
+  setUsers: (users) => set({ users }),
+
+  fetchUsers: async () => {
+    try {
+      const res = await API.get("/admin/users");
+      set({ users: res.data || [] });
+    } catch (err) {
+      console.error("Failed to fetch users", err);
+      toast.error("Failed to fetch users");
+    }
+  },
+
+  deleteUser: async (id: number) => {
+    if (!window.confirm("Delete this user?")) return;
+
+    try {
+      await API.delete(`/admin/users/${id}`);
+
+      set((state) => ({
+        users: state.users.filter((u) => u.id !== id),
+      }));
+
+      toast.success("User deleted");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Delete failed");
+    }
+  },
 
   /* ================= CATEGORIES ================= */
 
@@ -175,7 +213,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       await API.delete(`/admin/logs/${id}`);
       toast.success("Log deleted successfully");
 
-      // handle last item edge case
       if (get().logs.length === 1 && get().currentPageLogs > 1) {
         get().fetchLogs(get().currentPageLogs - 1, get().searchTerm);
       } else {
@@ -280,35 +317,27 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   /* ================= PRODUCTS ACTIONS ================= */
+
   createOrUpdateProduct: async () => {
     const { productForm, editingProduct, currentPage, searchTerm } = get();
 
     try {
       const formData = new FormData();
 
-      // ✅ ALWAYS send all core fields (very important for update)
       formData.append("title", productForm.title ?? "");
       formData.append("short_description", productForm.short_description ?? "");
       formData.append("description", productForm.description ?? "");
       formData.append("price", String(productForm.price ?? 0));
       formData.append("asset_type", productForm.asset_type ?? "");
       formData.append("category_id", String(productForm.category_id ?? ""));
-
-      // ✅ Laravel boolean fix (CRITICAL)
       formData.append("is_published", productForm.is_published ? "1" : "0");
 
-      // ✅ Only send files if NEW files selected
       if (productForm.preview_image instanceof File) {
         formData.append("preview_image", productForm.preview_image);
       }
 
       if (productForm.asset_file instanceof File) {
         formData.append("asset_file", productForm.asset_file);
-      }
-
-      // 🔥 DEBUG (optional but VERY useful)
-      for (let pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
       }
 
       if (editingProduct) {
@@ -339,6 +368,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       toast.error(message);
     }
   },
+
   deleteProduct: async (id: number) => {
     if (!window.confirm("Delete this product?")) return;
 
@@ -351,6 +381,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       toast.error("Error deleting product");
     }
   },
+
   /* ================= FORM ================= */
 
   setEditingProduct: (product) => {
@@ -365,10 +396,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
             asset_type: product.asset_type,
             category_id: product.category_id,
             is_published: product.is_published,
-
-            // 🔥 IMPORTANT
-            preview_images: null, // ONLY for new uploads
-
+            preview_images: null,
             asset_file: product.asset_url || undefined,
           }
         : {
@@ -377,6 +405,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
           },
     });
   },
+
   updateProductForm: (updates) => {
     set((state) => ({
       productForm: { ...state.productForm, ...updates },

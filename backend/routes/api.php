@@ -36,26 +36,34 @@ Route::middleware(['jwt.auth'])->group(function () {
 
 
 // Admin routes
-Route::prefix('admin')->middleware(['jwt.auth'])->group(function () {
-    Route::get('/categories', [AdminCategoryController::class, 'index']);
-    Route::post('/categories', [AdminCategoryController::class, 'store']);
-    Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy']);
+Route::prefix('admin')->group(function () {
 
-    Route::get('/products', [ProductController::class, 'index']);
-    Route::post('/products', [ProductController::class, 'store']);
-    Route::put('/products/{product}', [ProductController::class, 'update']);
-    Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+    Route::middleware(['auth.jwt', 'role:admin'])->group(function () {
+        Route::get('/dashboard', [AdminController::class, 'dashboard']);
+        Route::get('/users', [AdminController::class, 'users']); // READ
+        Route::delete('/users/{id}', [AdminController::class, 'deleteUser']); // DELETE
+    });
 
-    Route::middleware('auth:api')->group(function () {
+    Route::middleware(['jwt.auth'])->group(function () {
+        Route::get('/categories', [AdminCategoryController::class, 'index']);
+        Route::post('/categories', [AdminCategoryController::class, 'store']);
+        Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy']);
+
+        Route::get('/products', [ProductController::class, 'index']);
+        Route::post('/products', [ProductController::class, 'store']);
+        Route::put('/products/{product}', [ProductController::class, 'update']);
+        Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+
+        Route::get('/logs', [AdminController::class, 'logs']);
+        Route::delete('/logs/{id}', [AdminController::class, 'deleteLog']);
+        Route::get('/logs/export', [AdminController::class, 'exportLogs']);
+    });
+
+    Route::middleware(['auth:api'])->group(function () {
         Route::get('/products/{product}/download', [DownloadController::class, 'download']);
     });
 
-    Route::get('/logs', [AdminController::class, 'logs']);
-    Route::delete('/logs/{id}', [AdminController::class, 'deleteLog']);
-    Route::get('/logs/export', [AdminController::class, 'exportLogs']);
-
 });
-
 
 // PUBLIC SHOP PAGE MARKETPLACE
 Route::get('/products', [PublicProductController::class, 'index']);

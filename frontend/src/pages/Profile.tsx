@@ -3,12 +3,11 @@ import API from "../api";
 import { toast } from "react-toastify";
 import { useStore } from "../store/useStore";
 import styles from "./Profile.module.css";
-
-import { ProfileData, ProfileUpdateRequest } from "../types";
+import type { ProfileData, FormData } from "../types";
 
 const Profile = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [formData, setFormData] = useState<ProfileUpdateRequest>({
+  const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",
     password_confirmation: "",
@@ -20,8 +19,9 @@ const Profile = () => {
   useEffect(() => {
     API.get("/profile")
       .then((res) => {
-        setProfile(res.data);
-        setFormData((prev) => ({ ...prev, email: res.data.email || "" }));
+        const userData = res.data.data; // ← get the `data` key
+        setProfile(userData);
+        setFormData((prev) => ({ ...prev, email: userData.email || "" }));
         setLoading(false);
       })
       .catch(() => {

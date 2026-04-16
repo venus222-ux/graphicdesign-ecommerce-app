@@ -1,10 +1,16 @@
 import React from "react";
-import { LayoutDashboard, Package, Layers, Database } from "lucide-react";
+import {
+  LayoutDashboard,
+  Package,
+  Layers,
+  Database,
+  Users,
+} from "lucide-react";
 import styles from "../../styles/AdminDashboard.module.css";
 
 interface AdminSidebarProps {
-  activeTab: "products" | "categories" | "logs";
-  setActiveTab: (tab: "products" | "categories" | "logs") => void;
+  activeTab: "products" | "categories" | "logs" | "users";
+  setActiveTab: (tab: "products" | "categories" | "logs" | "users") => void;
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -33,12 +39,19 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           <Layers size={18} /> <span>Categories</span>
         </li>
 
-        {/* New Logs Tab */}
         <li
           className={activeTab === "logs" ? styles.active : ""}
           onClick={() => setActiveTab("logs")}
         >
           <Database size={18} /> <span>Upload Logs</span>
+        </li>
+
+        {/* ✅ USERS TAB ADDED */}
+        <li
+          className={activeTab === "users" ? styles.active : ""}
+          onClick={() => setActiveTab("users")}
+        >
+          <Users size={18} /> <span>Users</span>
         </li>
       </ul>
     </nav>
