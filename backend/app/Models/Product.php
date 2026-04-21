@@ -24,6 +24,11 @@ class Product extends Model implements HasMedia
         'user_id'
     ];
 
+    protected $appends = [
+      'preview_url',
+      'preview_urls'
+    ];
+
     public function category()
     {
         return $this->belongsTo(Category::class);
@@ -34,28 +39,34 @@ class Product extends Model implements HasMedia
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function registerMediaCollections(): void
-    {
-        $this->addMediaCollection('previews')
-             ->useDisk('public')           // or 's3' etc.
-             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
-             ->singleFile(false);          // allow multiple
-    }
-
-// Return first preview image
-public function getPreviewUrlAttribute(): ?string
+   public function registerMediaCollections(): void
 {
+    $this->addMediaCollection('previews')
+         ->useDisk('public')
+         ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+         ->singleFile(false);
+
+    // Optional: also register the asset collection explicitly
+    $this->addMediaCollection('asset')
+         ->useDisk('public')
+         ->singleFile(true);   // usually only one asset file
+}
+
+  public function getPreviewUrlAttribute(): ?string  // first image
+  {
     $media = $this->getMedia('previews')->first();
-    return $media ? asset('storage/' . $media->id . '/' . $media->file_name) : null;
-}
+    return $media?->getFullUrl();   // use null-safe operator
+  }
 
-// Return all preview images
-public function getPreviewUrlsAttribute(): array
-{
+   public function getPreviewUrlsAttribute(): array // ALL images
+   {
     return $this->getMedia('previews')
-                ->map(fn($m) => asset('storage/' . $m->id . '/' . $m->file_name))
-                ->toArray();
-}
+        ->map(fn($media) => $media->getFullUrl())
+        ->toArray();
+   }
+
+
+
     protected $casts = [
        'is_published' => 'boolean',
     ];

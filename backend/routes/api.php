@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\DownloadController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Product\PublicProductController;
 use App\Http\Controllers\Product\CategoryController;
@@ -74,3 +76,13 @@ Route::get('/search', [SearchController::class, 'search']);
 //Categories
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{category:slug}/products', [CategoryController::class, 'products']);
+
+
+Route::prefix('cart')->group(function () {
+    Route::get('/', [CartController::class, 'index']);
+    Route::post('/add', [CartController::class, 'add']);
+    Route::delete('/{id}', [CartController::class, 'remove']);
+    Route::delete('/', [CartController::class, 'clear']);
+});
+
+Route::post('/checkout', [CheckoutController::class, 'checkout'])->middleware('jwt.auth');

@@ -9,12 +9,12 @@ class ProductSearchService
 {
     protected $client;
 
-    public function __construct()
-    {
-         $this->client = ClientBuilder::create()
-         ->setHosts([config('services.elasticsearch.host')])
-         ->build();
-    }
+public function __construct()
+{
+    $this->client = \Elastic\Elasticsearch\ClientBuilder::create()
+        ->setHosts([config('services.elasticsearch.host')])
+        ->build();
+}
 
 public function index(Product $product)
 {
@@ -108,25 +108,20 @@ public function search($query, $filters = [], $from = 0, $size = 12)
     ]);
 }
 
-    public function delete(int $id): void
-    {
-        try {
-            $this->client->delete([
-                'index' => 'products',
-                'id'    => $id,
-                'headers' => [
-                    'Accept' => 'application/vnd.elasticsearch+json; compatible-with=8',
-                    'Content-Type' => 'application/vnd.elasticsearch+json; compatible-with=8',
-                ],
-            ]);
-        } catch (\Exception $e) {
-            Log::warning('Elasticsearch delete failed', [
-                'id' => $id,
-                'message' => $e->getMessage()
-            ]);
-        }
+public function delete(int $id): void
+{
+    try {
+        $this->client->delete([
+            'index' => config('services.elasticsearch.index'),
+            'id'    => $id,
+        ]);
+    } catch (\Throwable $e) {
+        Log::warning('ES delete failed', [
+            'id' => $id,
+            'error' => $e->getMessage()
+        ]);
     }
-
+}
 
     public function bulkIndex($products)
 {

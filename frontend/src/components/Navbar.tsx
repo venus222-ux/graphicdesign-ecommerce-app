@@ -3,6 +3,8 @@ import { useStore } from "../store/useStore";
 import { logoutRequest } from "../api";
 import styles from "../styles/Navbar.module.css";
 import { useEffect, useState } from "react";
+import { ShoppingCart } from "lucide-react";
+import { useCartStore } from "../store/useCartStore";
 
 export default function Navbar() {
   const { isAuth, initialized, logout, theme, toggleTheme, role } = useStore();
@@ -13,7 +15,11 @@ export default function Navbar() {
   >([]);
   const [open, setOpen] = useState(false);
 
-  // ✅ FIX: hook sus, nu după return
+  // 🛒 CART BADGE (FIXED - derived state)
+  const totalItems = useCartStore((s) =>
+    s.items.reduce((acc, i) => acc + i.quantity, 0),
+  );
+
   useEffect(() => {
     fetch("/api/categories")
       .then((res) => res.json())
@@ -26,7 +32,9 @@ export default function Navbar() {
   if (!initialized) {
     return (
       <div
-        className={`${styles.navWrapper} ${theme === "dark" ? styles.dark : ""}`}
+        className={`${styles.navWrapper} ${
+          theme === "dark" ? styles.dark : ""
+        }`}
       >
         <nav className={styles.glassNav}>
           <span>Loading...</span>
@@ -56,7 +64,7 @@ export default function Navbar() {
         </Link>
 
         <div className={styles.navGroup}>
-          {/* ✅ DROPDOWN */}
+          {/* DROPDOWN */}
           <div
             className={styles.dropdown}
             onMouseEnter={() => setOpen(true)}
@@ -66,7 +74,6 @@ export default function Navbar() {
 
             {open && (
               <div className={styles.dropdownMenu}>
-                {/* ✅ All products MUTAT AICI */}
                 <Link
                   to="/shop"
                   className={styles.dropdownItem}
@@ -121,6 +128,15 @@ export default function Navbar() {
               >
                 Profile
               </NavLink>
+
+              {/* 🛒 CART ICON (ONLY FOR LOGGED USERS OR MOVE IT OUTSIDE IF YOU WANT PUBLIC CART) */}
+              <Link to="/cart" className={styles.cartIcon}>
+                <ShoppingCart size={20} />
+
+                {totalItems > 0 && (
+                  <span className={styles.cartBadge}>{totalItems}</span>
+                )}
+              </Link>
             </>
           ) : (
             <>
@@ -141,6 +157,15 @@ export default function Navbar() {
               >
                 Register
               </NavLink>
+
+              {/* 🛒 CART ALSO FOR GUESTS (RECOMMENDED FOR ECOMMERCE) */}
+              <Link to="/cart" className={styles.cartIcon}>
+                <ShoppingCart size={20} />
+
+                {totalItems > 0 && (
+                  <span className={styles.cartBadge}>{totalItems}</span>
+                )}
+              </Link>
             </>
           )}
         </div>
@@ -149,8 +174,9 @@ export default function Navbar() {
           <button
             className={styles.iconBtn}
             onClick={toggleTheme}
-            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-            title="Toggle theme"
+            aria-label={`Switch to ${
+              theme === "light" ? "dark" : "light"
+            } mode`}
           >
             {theme === "light" ? "🌙" : "☀️"}
           </button>

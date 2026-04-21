@@ -26,7 +26,6 @@ class PublicProductController extends Controller
                 'last_page'    => $products->lastPage(),
             ]);
     }
-
 public function show($slug)
 {
     $product = Product::with('category')
@@ -34,7 +33,8 @@ public function show($slug)
         ->where('is_published', true)
         ->firstOrFail();
 
-    // Load related products manually
+    $product->load('media');
+
     $relatedProducts = Product::with('category')
         ->where('category_id', $product->category_id)
         ->where('id', '!=', $product->id)
@@ -43,8 +43,8 @@ public function show($slug)
         ->take(4)
         ->get();
 
-    // Attach as a relationship so whenLoaded() works
-    $product->setRelation('relatedProducts', $relatedProducts); //"fake-load" the relationship.
+    $product->setRelation('relatedProducts', $relatedProducts);
+    
 
     return new ProductResource($product);
 }

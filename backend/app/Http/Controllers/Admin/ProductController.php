@@ -15,9 +15,7 @@ use App\Services\ProductSearchService;
 
 class ProductController extends Controller
 {
-    /**
-     * Display a listing of products with pagination + search support
-     */
+    /* ================= INDEX ================= */
     public function index(Request $request)
     {
         $perPage = $request->input('per_page', 10);
@@ -35,130 +33,158 @@ class ProductController extends Controller
         return $query->paginate($perPage);
     }
 
-    /**
-     * Store a newly created product
-     */
-  public function store(StoreProductRequest $request, ProductSearchService $searchService)
+public function store(StoreProductRequest $request, ProductSearchService $searchService)
 {
     try {
-        Log::info('Store product started', ['data' => $request->validated()]);
-
         $data = $request->validated();
         $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
         $data['user_id'] = auth()->id();
 
         $product = Product::create($data);
-        Log::info('Product created', ['product_id' => $product->id]);
 
-        // Handle multiple preview images
+        // media safe
         if ($request->hasFile('preview_images')) {
-            $product->addMultipleMediaFromRequest(['preview_images'])
-                    ->each(function ($fileAdder) {
-                        $fileAdder->toMediaCollection('previews');
-                    });
-            Log::info('Multiple preview images saved');
+            foreach ($request->file('preview_images') as $file) {
+                $product->addMedia($file)->toMediaCollection('previews');
+            }
         }
 
-        // Handle asset file (single)
         if ($request->hasFile('asset_file')) {
-            $media = $product->addMediaFromRequest('asset_file')->toMediaCollection('asset');
+            $product->clearMediaCollection('asset');
 
-            FileUploaded::dispatch(
-                $product,
-                [
-                    'file_name' => $media->file_name,
-                    'size' => $media->size,
-                    'mime' => $media->mime_type,
-                    'path' => $media->getPath(),
-                ],
-                auth()->user(),
-                $request->ip(),
-                $request->userAgent()
-            );
-            Log::info('Asset file saved and event dispatched');
+            $media = $product
+                ->addMedia($request->file('asset_file'))
+                ->toMediaCollection('asset');
         }
 
-        $searchService->index($product);
+      
 
-        return response()->json($product->load('category'), 201);
+        return response()->json([
+            'message' => 'Product created',
+            'data' => $product->load(['category', 'media'])
+        ], 201);
 
-    } catch (Throwable $e) {
-        Log::error('Product store failed', [
-            'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-            'data' => $request->validated(),
-            'has_previews' => $request->hasFile('preview_images'),
-            'has_asset' => $request->hasFile('asset_file'),
+    } catch (\Throwable $e) {
+        Log::error('STORE FAILED', [
+            'error' => $e->getMessage()
         ]);
 
         return response()->json([
-            'message' => 'Failed to create product',
-            'error' => $e->getMessage(),
+            'message' => 'Failed to create product'
         ], 500);
     }
 }
 
-    /**
-     * Update an existing product
-     */
+    /* ================= UPDATE ================= */
+    public function update(UpdateProductRequest $request, Product $product, ProductSearchService $searchService)
+    {
+        try {
+            $data = $request->validated();
 
-  public function update(UpdateProductRequest $request, Product $product, ProductSearchService $searchService)
-  {
-    $data = $request->validated();
+            if (isset($data['is_published'])) {
+                $data['is_published'] = (bool) $data['is_published'];
+            }
 
-    // Force boolean 0/1 for is_published if sent
-    if (isset($data['is_published'])) {
-        $data['is_published'] = $data['is_published'] ? 1 : 0;
+            if (isset($data['title']) && $data['title'] !== $product->title) {
+                $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
+            }
+
+            $product->update($data);
+
+            /* ================= REPLACE PREVIEW IMAGES ================= */
+            if ($request->hasFile('preview_images')) {
+
+                $product->clearMediaCollection('previews');
+
+                foreach ($request->file('preview_images') as $file) {
+                    $product
+                        ->addMedia($file)
+                        ->toMediaCollection('previews');
+                }
+            }
+
+            /* ================= REPLACE ASSET ================= */
+            if ($request->hasFile('asset_file')) {
+                $product->clearMediaCollection('asset');
+
+                $media = $product
+                    ->addMediaFromRequest('asset_file')
+                    ->toMediaCollection('asset');
+
+                FileUploaded::dispatch(
+                    $product,
+                    [
+                        'file_name' => $media->file_name,
+                        'size' => $media->size,
+                        'mime' => $media->mime_type,
+                        'path' => $media->getPath(),
+                    ],
+                    auth()->user(),
+                    $request->ip(),
+                    $request->userAgent()
+                );
+            }
+
+            $searchService->index($product);
+
+            return response()->json(
+                $product->fresh()->load('category'),
+                200
+            );
+
+        } catch (Throwable $e) {
+            Log::error('Product update failed', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Update failed',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-
-    // Update slug if title changes
-    if (isset($data['title']) && $data['title'] !== $product->title) {
-        $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
-    }
-
-    // Update product
-    $product->update($data);
-
-    // Handle multiple preview images (replace all)
-    if ($request->hasFile('preview_images')) {
-        $product->clearMediaCollection('previews');
-        $product->addMultipleMediaFromRequest(['preview_images'])
-                ->each(function ($fileAdder) {
-                    $fileAdder->toMediaCollection('previews');
-                });
-    }
-
-    // Handle asset file (replace existing)
-    if ($request->hasFile('asset_file')) {
-        $product->clearMediaCollection('asset');
-        $media = $product->addMediaFromRequest('asset_file')->toMediaCollection('asset');
-
-        FileUploaded::dispatch(
-            $product,
-            [
-                'file_name' => $media->file_name,
-                'size' => $media->size,
-                'mime' => $media->mime_type,
-                'path' => $media->getPath(),
-            ],
-            auth()->user(),
-            $request->ip(),
-            $request->userAgent()
-        );
-    }
-
-    // Reindex in search
-    $searchService->index($product);
-
-    return response()->json($product->fresh()->load('category'), 200);
-  }
-    /**
+   /**
      * Delete a product
      */
-    public function destroy(Product $product, ProductSearchService $searchService)
-    {
-        $product->delete();
-        $searchService->delete($product->id);
-        return response()->json(['message' => 'Product deleted successfully']);
+ public function destroy(Product $product, ProductSearchService $searchService)
+{
+    $id = $product->id;
+
+    try {
+        // This will throw ModelNotFoundException if the model binding fails,
+        // but since you're using route model binding, it should already be loaded.
+        $product->delete();   // or $product->forceDelete() if you want hard delete
+
+    } catch (\Throwable $e) {
+        Log::error('Failed to delete product from database', [
+            'product_id' => $id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'message' => 'Failed to delete product from database',
+            'error'   => config('app.debug') ? $e->getMessage() : null,
+        ], 500);
     }
+
+    /* ================= ELASTICSEARCH (NON-BLOCKING) ================= */
+    try {
+        $searchService->delete($id);
+    } catch (\Throwable $e) {
+        // Log the Elasticsearch error but **do not fail** the whole request
+        // (the product is already deleted from DB — that's the source of truth)
+        Log::warning('Failed to delete product from Elasticsearch', [
+            'product_id' => $id,
+            'error' => $e->getMessage(),
+        ]);
+
+        // You can still return success, or return a partial success message
+    }
+
+    return response()->json([
+        'message' => 'Product deleted successfully'
+    ]);
 }
+}
+

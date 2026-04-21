@@ -18,6 +18,8 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const Shop = lazy(() => import("./pages/Shop"));
 const ProductDetails = lazy(() => import("./pages/ProductDetails"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Checkout = lazy(() => import("./pages/Checkout"));
 
 const AuthBootstrap = () => {
   useAuthRestore(); // runs the auth restoration logic
@@ -49,6 +51,8 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
             <Route path="/products/:slug" element={<ProductDetails />} />
             <Route path="/category/:slug" element={<CategoryPage />} />
             <Route

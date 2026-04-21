@@ -5,12 +5,18 @@ import API from "../api";
 import { Product } from "../types";
 import styles from "../styles/ProductDetails.module.css";
 import ProductCard from "../components/Product/ProductCard";
+import { useCartStore } from "../store/useCartStore";
+import { ShoppingCart } from "lucide-react";
+import { toast } from "react-toastify";
 
 const ProductDetails = () => {
   const { slug } = useParams<{ slug: string }>();
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // 1. Data Fetching
+  // 🛒 CART STORE
+  const addToCart = useCartStore((s) => s.addToCart);
+
+  // 1. Fetch product
   const {
     data: product,
     isLoading,
@@ -24,9 +30,10 @@ const ProductDetails = () => {
     enabled: !!slug,
   });
 
-  // 2. Memoized Image Logic (Cleans up the render block)
+  // 2. Images
   const previews = useMemo((): string[] => {
     if (!product) return [];
+
     const raw = product.preview_urls;
 
     if (Array.isArray(raw)) return raw.map(String);
@@ -35,27 +42,38 @@ const ProductDetails = () => {
       try {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) return parsed.map(String);
-      } catch (e) {
-        return [raw]; // Fallback if string is just a single URL
+      } catch {
+        return [raw];
       }
     }
+
     return product.preview_url ? [product.preview_url] : [];
   }, [product]);
 
-  // 3. Handlers
+  // 3. Carousel
   const nextSlide = () =>
     setCurrentIndex((prev) => (prev + 1) % previews.length);
+
   const prevSlide = () =>
     setCurrentIndex((prev) => (prev - 1 + previews.length) % previews.length);
 
-  // 4. Guard Clauses (Loading/Error States)
+  // 🛒 ADD TO CART
+  const handleAddToCart = () => {
+    if (!product) return;
+
+    addToCart(product);
+
+    toast.success("Added to cart 🛒");
+  };
+
+  // 4. States
   if (isLoading) return <LoadingState />;
   if (isError || !product) return <ErrorState />;
 
   return (
     <div className={styles.pageWrapper}>
       <div className="container py-4">
-        {/* Breadcrumb - Subtle & Clean */}
+        {/* Breadcrumb */}
         <nav className="mb-4 small">
           <Link to="/" className="text-decoration-none text-muted">
             Marketplace
@@ -67,7 +85,7 @@ const ProductDetails = () => {
         </nav>
 
         <div className="row g-lg-5">
-          {/* Left: Gallery Section */}
+          {/* LEFT: IMAGES */}
           <div className="col-lg-7">
             <div className={styles.mainImageWrapper}>
               {previews.length > 0 ? (
@@ -78,6 +96,7 @@ const ProductDetails = () => {
                       alt={product.title}
                       className={styles.mainDisplayImage}
                     />
+
                     {previews.length > 1 && (
                       <>
                         <button
@@ -96,7 +115,6 @@ const ProductDetails = () => {
                     )}
                   </div>
 
-                  {/* Thumbnail Strip */}
                   <div className="d-flex gap-2 mt-3 overflow-auto pb-2">
                     {previews.map((url, idx) => (
                       <img
@@ -117,16 +135,10 @@ const ProductDetails = () => {
             </div>
           </div>
 
-          {/* Right: Purchase & Info Section */}
+          {/* RIGHT: INFO */}
           <div className="col-lg-5">
             <div className="sticky-top" style={{ top: "2rem" }}>
-              <span
-                className="badge rounded-pill px-3 py-2 mb-3"
-                style={{
-                  backgroundColor: "rgba(13, 110, 253, 0.1)",
-                  color: "#0d6efd",
-                }}
-              >
+              <span className="badge rounded-pill px-3 py-2 mb-3 bg-primary-subtle text-primary">
                 {product.asset_type || "Digital Asset"}
               </span>
 
@@ -139,41 +151,40 @@ const ProductDetails = () => {
                 <div className="card-body p-4">
                   <div className="d-flex justify-content-between align-items-end mb-4">
                     <div>
-                      <small className="text-uppercase text-muted fw-bold ls-1">
+                      <small className="text-uppercase text-muted fw-bold">
                         Price
                       </small>
-                      <h2 className="mb-0 fw-bold text-dark">
-                        ${product.price}
-                      </h2>
-                    </div>
-                    <div className="text-end">
-                      <span className="text-success small fw-medium">
-                        ● Instant Access
-                      </span>
+                      <h2 className="mb-0 fw-bold">${product.price}</h2>
                     </div>
                   </div>
 
-                  <button className="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm mb-3">
-                    Download Now
+                  {/* 🛒 ADD TO CART BUTTON */}
+                  <button
+                    onClick={handleAddToCart}
+                    className="btn btn-dark w-100 py-3 fw-bold rounded-3 shadow-sm mb-3 d-flex align-items-center justify-content-center gap-2"
+                  >
+                    <ShoppingCart size={18} />
+                    Add to Cart
                   </button>
 
                   <div className="d-flex justify-content-center gap-3 small text-muted">
-                    <span>✓ Secure Payment</span>
-                    <span>✓ Verified Asset</span>
+                    <span>✓ Secure</span>
+                    <span>✓ Instant Access</span>
                   </div>
                 </div>
               </div>
 
-              {/* Quick Specs Grid */}
+              {/* SPECS */}
               <div className="row g-2 mb-4">
                 <div className="col-6">
                   <div className="p-3 bg-light rounded-3 border">
                     <small className="text-muted d-block">Format</small>
-                    <span className="fw-bold text-uppercase">
+                    <span className="fw-bold">
                       {product.asset_type || "N/A"}
                     </span>
                   </div>
                 </div>
+
                 <div className="col-6">
                   <div className="p-3 bg-light rounded-3 border">
                     <small className="text-muted d-block">Category</small>
@@ -187,20 +198,18 @@ const ProductDetails = () => {
           </div>
         </div>
 
-        {/* Bottom Section: Description */}
+        {/* DESCRIPTION */}
         <div className="row mt-5">
           <div className="col-lg-7">
             <h4 className="fw-bold mb-4">Description</h4>
-            <div className={`${styles.descriptionBody} text-secondary`}>
-              {product.description}
-            </div>
+            <div className="text-secondary">{product.description}</div>
           </div>
         </div>
 
-        {/* Related Products Section */}
-        {product?.related_products?.length && (
+        {/* RELATED */}
+        {product?.related_products?.length ? (
           <div className="mt-5 pt-5 border-top">
-            <h4 className="fw-bold mb-4">Recommended for you</h4>
+            <h4 className="fw-bold mb-4">Recommended</h4>
             <div className="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
               {product.related_products.map((item) => (
                 <div className="col" key={item.id}>
@@ -209,27 +218,28 @@ const ProductDetails = () => {
               ))}
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
 };
 
-// Sub-components for cleaner code
+export default ProductDetails;
+
+/* ================= STATES ================= */
+
 const LoadingState = () => (
   <div className="container py-5 text-center">
-    <div className="spinner-border text-primary" role="status" />
-    <p className="mt-3">Loading product details...</p>
+    <div className="spinner-border text-primary" />
+    <p className="mt-3">Loading product...</p>
   </div>
 );
 
 const ErrorState = () => (
   <div className="container py-5 text-center">
-    <h3>Oops! Asset not found.</h3>
+    <h3>Product not found</h3>
     <Link to="/" className="btn btn-outline-primary mt-3">
-      Return to Store
+      Go Home
     </Link>
   </div>
 );
-
-export default ProductDetails;

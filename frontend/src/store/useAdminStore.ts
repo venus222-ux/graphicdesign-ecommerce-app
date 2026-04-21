@@ -374,11 +374,18 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
     try {
       await API.delete(`/admin/products/${id}`);
+
       toast.success("Product deleted");
 
-      get().fetchProducts(get().currentPage, get().searchTerm);
-    } catch {
-      toast.error("Error deleting product");
+      await get().fetchProducts(get().currentPage, get().searchTerm);
+    } catch (err: any) {
+      console.error("DELETE PRODUCT ERROR:", err?.response?.data || err);
+
+      toast.error(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Error deleting product",
+      );
     }
   },
 

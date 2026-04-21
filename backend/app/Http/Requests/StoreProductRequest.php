@@ -32,7 +32,8 @@ class StoreProductRequest extends FormRequest
         'is_published' => 'required|boolean', // <-- ensures true or false
 
         // Files
-        'preview_images.*' => 'nullable|image|mimes:jpeg,png,webp,gif|max:5120', // 5MB each
+        'preview_images' => 'nullable|array',
+        'preview_images.*' => 'image|mimes:jpeg,png,webp,gif|max:5120',
         'asset_file'    => 'nullable|file|max:102400', // 100 MB
     ];
 }

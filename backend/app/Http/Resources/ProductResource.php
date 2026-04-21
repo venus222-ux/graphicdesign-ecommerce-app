@@ -8,63 +8,43 @@ class ProductResource extends JsonResource
 {
     public function toArray($request)
     {
-        // --- Relațiile ---
+        // Force load media + category (safety + performance)
+        if (!$this->relationLoaded('media')) {
+         $this->load('media');
+       }
         if (!$this->relationLoaded('category')) {
             $this->load('category');
         }
 
-        // --- Construim lista de preview-uri ---
-        $previewUrls = [];
+        // Get URLs directly from accessor
+        $previewUrls = $this->getMedia('previews')
+          ->map(fn($media) => $media->getFullUrl())
+          ->toArray();
 
-        // 1️⃣ Din coloana preview_images (JSON array)
-        if (!empty($this->preview_images)) {
-            $images = json_decode($this->preview_images, true);
-            if (is_array($images)) {
-                foreach ($images as $img) {
-                    if ($img) {
-                        $previewUrls[] = asset('storage/media/' . $img);
-                    }
-                }
-            }
-        }
-
-        // 2️⃣ Fallback la preview_image (single image)
-        if (empty($previewUrls) && !empty($this->preview_image)) {
-            $previewUrls[] = asset('storage/media/' . $this->preview_image);
+        // Strong fallback
+        if (empty($previewUrls) && $this->preview_url) {
+            $previewUrls = [$this->preview_url];
         }
 
         $previewUrl = $previewUrls[0] ?? null;
 
-        // --- Category ---
-        $category = null;
-        if (!empty($this->category)) {
-            $category = is_object($this->category) && method_exists($this->category, 'only')
-                ? $this->category->only(['id', 'name'])
-                : (array) $this->category;
-        }
-
         return [
             'id'                => $this->id,
-            'slug'              => $this->slug ?? null,
+            'slug'              => $this->slug,
             'title'             => $this->title,
             'price'             => $this->price,
             'short_description' => $this->short_description,
             'description'       => $this->description,
             'asset_type'        => $this->asset_type ?? 'Premium',
-            'category'          => $category,
+            'category'          => $this->category?->only(['id', 'name']),
             'preview_url'       => $previewUrl,
-            'preview_urls'      => $previewUrls ?: ($previewUrl ? [$previewUrl] : []),
-            'score'             => null,
-
-            // ✅ Related products (same category)
-            'related_products' => ProductCardResource::collection(
-               $this->whenLoaded('relatedProducts')
+            'preview_urls'      => $previewUrls,
+            'related_products'  => ProductCardResource::collection(
+                $this->whenLoaded('relatedProducts')
             ),
         ];
     }
 }
-
-
 /***
  * whenLoaded() ensures no extra queries are run inside the resource
  * — only returns data for relationships you explicitly loaded.
