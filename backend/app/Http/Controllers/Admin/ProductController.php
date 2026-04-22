@@ -9,6 +9,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Events\FileUploaded;
+use App\Http\Resources\ProductResource;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 use App\Services\ProductSearchService;
@@ -16,22 +17,23 @@ use App\Services\ProductSearchService;
 class ProductController extends Controller
 {
     /* ================= INDEX ================= */
-    public function index(Request $request)
-    {
-        $perPage = $request->input('per_page', 10);
-        $search  = $request->input('search');
+public function index(Request $request)
+{
+    $perPage = $request->input('per_page', 10);
+    $search = $request->input('search');
 
-        $query = Product::with('category')->latest();
+    $query = Product::with(['category', 'media'])   // ← ADD 'media' here
+                    ->latest();
 
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('short_description', 'like', "%{$search}%");
-            });
-        }
-
-        return $query->paginate($perPage);
+    if ($search) {
+        $query->where(function ($q) use ($search) {
+            $q->where('title', 'like', "%{$search}%")
+              ->orWhere('short_description', 'like', "%{$search}%");
+        });
     }
+
+    return $query->paginate($perPage);
+}
 
 public function store(StoreProductRequest $request, ProductSearchService $searchService)
 {
@@ -42,12 +44,36 @@ public function store(StoreProductRequest $request, ProductSearchService $search
 
         $product = Product::create($data);
 
+        // 🔍 DEBUG FILES
+        Log::info('FILES DEBUG', [
+            'has_preview' => $request->hasFile('preview_images'),
+            'files' => $request->file('preview_images'),
+        ]);
+
         // media safe
-        if ($request->hasFile('preview_images')) {
-            foreach ($request->file('preview_images') as $file) {
-                $product->addMedia($file)->toMediaCollection('previews');
-            }
+      if ($request->hasFile('preview_images')) {
+
+    foreach ($request->file('preview_images') as $file) {
+
+        try {
+            $media = $product
+                ->addMedia($file)
+                ->toMediaCollection('previews');
+
+            Log::info('MEDIA SAVED', [
+                'file' => $media->file_name,
+                'path' => $media->getPath(),
+            ]);
+
+        } catch (\Throwable $e) {
+
+            Log::error('MEDIA ERROR', [
+                'message' => $e->getMessage(),
+                'file' => $file->getClientOriginalName(),
+            ]);
         }
+    }
+}
 
         if ($request->hasFile('asset_file')) {
             $product->clearMediaCollection('asset');
@@ -57,11 +83,9 @@ public function store(StoreProductRequest $request, ProductSearchService $search
                 ->toMediaCollection('asset');
         }
 
-      
-
         return response()->json([
             'message' => 'Product created',
-            'data' => $product->load(['category', 'media'])
+            'data' => new ProductResource($product)
         ], 201);
 
     } catch (\Throwable $e) {
@@ -69,9 +93,12 @@ public function store(StoreProductRequest $request, ProductSearchService $search
             'error' => $e->getMessage()
         ]);
 
-        return response()->json([
-            'message' => 'Failed to create product'
-        ], 500);
+       return response()->json([
+    'message' => 'Product created',
+    'data' => new \App\Http\Resources\ProductResource(
+        $product->fresh()->load(['category', 'media'])
+    )
+], 201);
     }
 }
 
@@ -127,10 +154,10 @@ public function store(StoreProductRequest $request, ProductSearchService $search
 
             $searchService->index($product);
 
-            return response()->json(
-                $product->fresh()->load('category'),
-                200
-            );
+         return response()->json(
+    new ProductResource($product->fresh()->load(['category', 'media'])),
+    200
+);
 
         } catch (Throwable $e) {
             Log::error('Product update failed', [

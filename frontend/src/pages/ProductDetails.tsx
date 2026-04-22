@@ -34,20 +34,20 @@ const ProductDetails = () => {
   const previews = useMemo((): string[] => {
     if (!product) return [];
 
-    const raw = product.preview_urls;
-
-    if (Array.isArray(raw)) return raw.map(String);
-
-    if (typeof raw === "string" && raw.trim() !== "") {
-      try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) return parsed.map(String);
-      } catch {
-        return [raw];
-      }
+    // Prefer the array we send from backend
+    if (
+      Array.isArray(product.preview_urls) &&
+      product.preview_urls.length > 0
+    ) {
+      return product.preview_urls;
     }
 
-    return product.preview_url ? [product.preview_url] : [];
+    // Fallback
+    if (product.preview_url) {
+      return [product.preview_url];
+    }
+
+    return [];
   }, [product]);
 
   // 3. Carousel

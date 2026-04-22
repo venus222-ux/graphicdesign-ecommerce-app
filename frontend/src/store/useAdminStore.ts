@@ -332,11 +332,18 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       formData.append("category_id", String(productForm.category_id ?? ""));
       formData.append("is_published", productForm.is_published ? "1" : "0");
 
-      if (productForm.preview_image instanceof File) {
-        formData.append("preview_image", productForm.preview_image);
+      // ✅ FIXED PREVIEW IMAGES
+      if (Array.isArray(productForm.preview_images)) {
+        productForm.preview_images.forEach((file) => {
+          // ✅ only images allowed
+          if (!file.type.startsWith("image/")) return;
+
+          formData.append("preview_images[]", file);
+        });
       }
 
-      if (productForm.asset_file instanceof File) {
+      // ✅ SAFE ASSET
+      if (productForm.asset_file && productForm.asset_file instanceof File) {
         formData.append("asset_file", productForm.asset_file);
       }
 

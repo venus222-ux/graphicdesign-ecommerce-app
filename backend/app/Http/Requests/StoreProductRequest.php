@@ -33,8 +33,8 @@ class StoreProductRequest extends FormRequest
 
         // Files
         'preview_images' => 'nullable|array',
-        'preview_images.*' => 'image|mimes:jpeg,png,webp,gif|max:5120',
-        'asset_file'    => 'nullable|file|max:102400', // 100 MB
+        'preview_images.*' => 'image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+        'asset_file' => 'nullable|file|mimes:zip,rar,pdf,psd|max:102400', // 100 MB
     ];
 }
     }

@@ -7,26 +7,8 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  const previewUrl = (() => {
-    if (
-      Array.isArray(product.preview_urls) &&
-      product.preview_urls.length > 0
-    ) {
-      return product.preview_urls[0];
-    }
-
-    if (typeof product.preview_urls === "string") {
-      try {
-        const parsed = JSON.parse(product.preview_urls);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed[0];
-        }
-      } catch {}
-    }
-
-    return product.preview_url;
-  })();
-  const categoryName = product.category?.name || "Asset";
+  // ✅ stable access (NO transformation, NO memo needed)
+  const previewUrl = product?.preview_urls?.[0] || product?.preview_url || null;
 
   return (
     <div className={styles.card}>
@@ -37,11 +19,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
             alt={product.title}
             className={styles.productImg}
             loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className={styles.noPreview}>📷 No Preview</div>
         )}
-        {/* Quick view overlay (appears on hover) */}
+
         <div className={styles.overlay}>
           <Link to={`/products/${product.slug}`} className={styles.quickView}>
             Quick View
@@ -49,14 +32,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </div>
       </div>
 
-      <span className={styles.badge}>{categoryName}</span>
-
       <h5 className={styles.productTitle}>{product.title}</h5>
 
       <div className={styles.cardFooter}>
         <span className={styles.price}>
           ${Number(product.price).toFixed(2)}
         </span>
+
         <Link to={`/products/${product.slug}`} className={styles.detailsLink}>
           Details →
         </Link>
