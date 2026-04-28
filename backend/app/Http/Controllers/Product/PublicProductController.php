@@ -28,12 +28,10 @@ class PublicProductController extends Controller
     }
 public function show($slug)
 {
-    $product = Product::with('category')
+    $product = Product::with(['category', 'media'])   // ← load media directly
         ->where('slug', $slug)
         ->where('is_published', true)
         ->firstOrFail();
-
-    $product->load('media');
 
     $relatedProducts = Product::with('category')
         ->where('category_id', $product->category_id)
@@ -44,7 +42,6 @@ public function show($slug)
         ->get();
 
     $product->setRelation('relatedProducts', $relatedProducts);
-    
 
     return new ProductResource($product);
 }

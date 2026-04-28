@@ -59,4 +59,9 @@ class User extends Authenticatable implements JWTSubject
     }
 
 
+    public function products()
+    {
+      return $this->belongsToMany(Product::class, 'user_products');
+    }
+
 }

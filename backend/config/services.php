@@ -40,4 +40,9 @@ return [
       'index' => env('ELASTICSEARCH_INDEX', 'products'),
     ],
 
+    'stripe' => [
+      'key' => env('STRIPE_KEY'),
+      'secret' => env('STRIPE_SECRET'),
+    ],
+
 ];

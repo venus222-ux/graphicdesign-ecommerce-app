@@ -317,50 +317,61 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   /* ================= PRODUCTS ACTIONS ================= */
-
   createOrUpdateProduct: async () => {
     const { productForm, editingProduct, currentPage, searchTerm } = get();
 
     try {
       const formData = new FormData();
 
+      // ================= BASIC FIELDS =================
       formData.append("title", productForm.title ?? "");
       formData.append("short_description", productForm.short_description ?? "");
       formData.append("description", productForm.description ?? "");
       formData.append("price", String(productForm.price ?? 0));
       formData.append("asset_type", productForm.asset_type ?? "");
       formData.append("category_id", String(productForm.category_id ?? ""));
+
       formData.append("is_published", productForm.is_published ? "1" : "0");
 
-      // ✅ FIXED PREVIEW IMAGES
-      if (Array.isArray(productForm.preview_images)) {
+      // ================= MULTIPLE PREVIEW IMAGES =================
+      // ================= MULTIPLE PREVIEW IMAGES - MOST RELIABLE WAY =================
+      if (
+        Array.isArray(productForm.preview_images) &&
+        productForm.preview_images.length > 0
+      ) {
         productForm.preview_images.forEach((file) => {
-          // ✅ only images allowed
-          if (!file.type.startsWith("image/")) return;
-
-          formData.append("preview_images[]", file);
+          formData.append("preview_images", file);
         });
       }
-
-      // ✅ SAFE ASSET
+      // ================= ASSET FILE (SINGLE) =================
       if (productForm.asset_file && productForm.asset_file instanceof File) {
         formData.append("asset_file", productForm.asset_file);
       }
 
+      // ================= API CALL =================
       if (editingProduct) {
         await API.post(
           `/admin/products/${editingProduct.id}?_method=PUT`,
           formData,
-          { headers: { "Content-Type": "multipart/form-data" } },
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          },
         );
+
         toast.success("Product updated successfully");
       } else {
         await API.post("/admin/products", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         });
+
         toast.success("Product created successfully");
       }
 
+      // ================= REFRESH =================
       await get().fetchProducts(currentPage, searchTerm);
       get().resetProductForm();
     } catch (err: any) {

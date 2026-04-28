@@ -78,7 +78,9 @@ API.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   config.headers = config.headers || {};
 
   // Only attach access token for normal requests
-  const token = useStore.getState().token;
+  const token =
+    useStore.getState().token ??
+    JSON.parse(localStorage.getItem("app-storage") || "{}")?.state?.token;
   if (token && !config.url?.includes("/refresh")) {
     config.headers.Authorization = `Bearer ${token}`;
   }

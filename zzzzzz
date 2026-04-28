@@ -1,0 +1,23 @@
+Right now your flow is:
+
+checkout → Stripe
+webhook → mark paid
+grantAccess → attach products
+
+👉 GOOD
+
+We will now ADD:
+
+order history API
+invoice download
+auto-download redirect
+frontend success handler
+
+
+
+NEXT:
+🔥 PDF invoices (like Stripe)
+🔥 email invoice after payment
+🔥 download protection (signed URLs expiring)
+🔥 “My Library” page (Gumroad clone UI)
+🔥 subscription system (SaaS upgrade)

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Events\FileUploaded;
 use App\Http\Resources\ProductResource;
+use App\Services\ProductMediaService;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 use App\Services\ProductSearchService;
@@ -35,8 +36,12 @@ public function index(Request $request)
     return $query->paginate($perPage);
 }
 
-public function store(StoreProductRequest $request, ProductSearchService $searchService)
-{
+
+public function store(
+    StoreProductRequest $request,
+    ProductSearchService $searchService,
+    ProductMediaService $mediaService
+) {
     try {
         $data = $request->validated();
         $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
@@ -44,36 +49,57 @@ public function store(StoreProductRequest $request, ProductSearchService $search
 
         $product = Product::create($data);
 
-        // 🔍 DEBUG FILES
-        Log::info('FILES DEBUG', [
-            'has_preview' => $request->hasFile('preview_images'),
-            'files' => $request->file('preview_images'),
-        ]);
+        // ✅ CLEAN CALL
+        $mediaService->syncPreviewImages(
+            $product,
+            $request->file('preview_images')
+        );
 
-        // media safe
-      if ($request->hasFile('preview_images')) {
-
-    foreach ($request->file('preview_images') as $file) {
-
-        try {
-            $media = $product
-                ->addMedia($file)
-                ->toMediaCollection('previews');
-
-            Log::info('MEDIA SAVED', [
-                'file' => $media->file_name,
-                'path' => $media->getPath(),
-            ]);
-
-        } catch (\Throwable $e) {
-
-            Log::error('MEDIA ERROR', [
-                'message' => $e->getMessage(),
-                'file' => $file->getClientOriginalName(),
-            ]);
+        if ($request->hasFile('asset_file')) {
+            $product
+                ->addMedia($request->file('asset_file'))
+                ->toMediaCollection('asset');
         }
+
+        return response()->json([
+            'message' => 'Product created',
+            'data' => new ProductResource(
+                $product->fresh()->load(['category', 'media'])
+            )
+        ], 201);
+
+    } catch (\Throwable $e) {
+        return response()->json([
+            'message' => 'Store failed',
+            'error' => $e->getMessage(),
+        ], 500);
     }
 }
+public function update(
+    UpdateProductRequest $request,
+    Product $product,
+    ProductSearchService $searchService,
+    ProductMediaService $mediaService
+) {
+    try {
+        $data = $request->validated();
+
+        if (isset($data['is_published'])) {
+            $data['is_published'] = (bool) $data['is_published'];
+        }
+
+        if (isset($data['title']) && $data['title'] !== $product->title) {
+            $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
+        }
+
+        $product->update($data);
+
+        // 🔥 REPLACE images clean
+        $mediaService->syncPreviewImages(
+            $product,
+            $request->file('preview_images'),
+            true
+        );
 
         if ($request->hasFile('asset_file')) {
             $product->clearMediaCollection('asset');
@@ -81,95 +107,39 @@ public function store(StoreProductRequest $request, ProductSearchService $search
             $media = $product
                 ->addMedia($request->file('asset_file'))
                 ->toMediaCollection('asset');
+
+            FileUploaded::dispatch(
+                $product,
+                [
+                    'file_name' => $media->file_name,
+                    'size' => $media->size,
+                    'mime' => $media->mime_type,
+                    'path' => $media->getPath(),
+                ],
+                auth()->user(),
+                $request->ip(),
+                $request->userAgent()
+            );
         }
 
-        return response()->json([
-            'message' => 'Product created',
-            'data' => new ProductResource($product)
-        ], 201);
+        $searchService->index($product);
+
+        return response()->json(
+            new ProductResource($product->fresh()->load(['category', 'media'])),
+            200
+        );
 
     } catch (\Throwable $e) {
-        Log::error('STORE FAILED', [
-            'error' => $e->getMessage()
-        ]);
-
-       return response()->json([
-    'message' => 'Product created',
-    'data' => new \App\Http\Resources\ProductResource(
-        $product->fresh()->load(['category', 'media'])
-    )
-], 201);
+        return response()->json([
+            'message' => 'Update failed',
+            'error' => $e->getMessage(),
+        ], 500);
     }
 }
 
-    /* ================= UPDATE ================= */
-    public function update(UpdateProductRequest $request, Product $product, ProductSearchService $searchService)
-    {
-        try {
-            $data = $request->validated();
 
-            if (isset($data['is_published'])) {
-                $data['is_published'] = (bool) $data['is_published'];
-            }
 
-            if (isset($data['title']) && $data['title'] !== $product->title) {
-                $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
-            }
 
-            $product->update($data);
-
-            /* ================= REPLACE PREVIEW IMAGES ================= */
-            if ($request->hasFile('preview_images')) {
-
-                $product->clearMediaCollection('previews');
-
-                foreach ($request->file('preview_images') as $file) {
-                    $product
-                        ->addMedia($file)
-                        ->toMediaCollection('previews');
-                }
-            }
-
-            /* ================= REPLACE ASSET ================= */
-            if ($request->hasFile('asset_file')) {
-                $product->clearMediaCollection('asset');
-
-                $media = $product
-                    ->addMediaFromRequest('asset_file')
-                    ->toMediaCollection('asset');
-
-                FileUploaded::dispatch(
-                    $product,
-                    [
-                        'file_name' => $media->file_name,
-                        'size' => $media->size,
-                        'mime' => $media->mime_type,
-                        'path' => $media->getPath(),
-                    ],
-                    auth()->user(),
-                    $request->ip(),
-                    $request->userAgent()
-                );
-            }
-
-            $searchService->index($product);
-
-         return response()->json(
-    new ProductResource($product->fresh()->load(['category', 'media'])),
-    200
-);
-
-        } catch (Throwable $e) {
-            Log::error('Product update failed', [
-                'message' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Update failed',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
    /**
      * Delete a product
      */

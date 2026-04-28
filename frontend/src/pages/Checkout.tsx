@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useCartStore } from "../store/useCartStore";
 import API from "../api";
 import styles from "../styles/Checkout.module.css";
+import { useStore } from "../store/useStore";
 
 const Checkout = () => {
   const navigate = useNavigate();
 
-  const { items, clearCart } = useCartStore();
+  const { items } = useCartStore();
   const [loading, setLoading] = useState(false);
 
   // SAFE TOTAL CALCULATION (no dependency on store method)
@@ -17,27 +18,26 @@ const Checkout = () => {
   );
 
   const handleCheckout = async () => {
+    const token = useStore.getState().token;
+
+    if (!token) {
+      alert("🔐 You must login to checkout");
+      navigate("/login");
+      return;
+    }
+
     if (items.length === 0) return;
 
     setLoading(true);
 
     try {
-      await API.post("/checkout", {
-        items: items.map((i) => ({
-          product_id: i.id,
-          quantity: i.quantity,
-        })),
+      const res = await API.post("/checkout", {
+        items,
       });
-
-      clearCart();
-
-      alert("✅ Order placed successfully!");
-
-      // 🔥 redirect to success or home
-      navigate("/shop");
-    } catch (err) {
-      console.error(err);
-      alert("❌ Checkout failed. Please try again.");
+      window.location.href = res.data.url;
+    } catch (err: any) {
+      console.error("CHECKOUT ERROR:", err?.response?.data);
+      alert(err?.response?.data?.error || "Checkout failed");
     } finally {
       setLoading(false);
     }

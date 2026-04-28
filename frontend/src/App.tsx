@@ -6,6 +6,7 @@ import { useStore } from "./store/useStore";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuthRestore } from "./store/useAuthRestore";
 import CategoryPage from "./pages/CategoryPage";
+import Success from "./pages/Success";
 
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
@@ -29,90 +30,103 @@ const AuthBootstrap = () => {
 const App = () => {
   const { theme, isAuth, role, initialized } = useStore();
 
+  // ✅ FIX: mark app as hydrated once on mount
+  useEffect(() => {
+    const { setInitialized } = useStore.getState();
+    setInitialized(true);
+  }, []);
+
   useEffect(() => {
     document.documentElement.setAttribute("data-bs-theme", theme);
   }, [theme]);
 
+  if (!initialized) {
+    return (
+      <div style={{ textAlign: "center", marginTop: "2rem" }}>Loading...</div>
+    );
+  }
+
   return (
     <BrowserRouter>
-      {/* AuthBootstrap must be inside the router to access useLocation */}
       <AuthBootstrap />
       <Navbar />
-      {!initialized ? (
-        <div style={{ textAlign: "center", marginTop: "2rem" }}>Loading...</div>
-      ) : (
-        <Suspense
-          fallback={
-            <div style={{ textAlign: "center", marginTop: "2rem" }}>
-              Loading page...
-            </div>
-          }
-        >
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/shop" element={<Shop />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/products/:slug" element={<ProductDetails />} />
-            <Route path="/category/:slug" element={<CategoryPage />} />
-            <Route
-              path="/login"
-              element={
-                !initialized ? (
-                  <div>Loading...</div>
-                ) : !isAuth ? (
-                  <Login />
-                ) : role === "admin" ? (
-                  <Navigate to="/admin/dashboard" replace />
-                ) : (
-                  <Navigate to="/dashboard" replace />
-                )
-              }
-            />
-            <Route
-              path="/register"
-              element={
-                !initialized ? (
-                  <div>Loading...</div>
-                ) : !isAuth ? (
-                  <Register />
-                ) : role === "admin" ? (
-                  <Navigate to="/admin/dashboard" replace />
-                ) : (
-                  <Navigate to="/dashboard" replace />
-                )
-              }
-            />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password/:token" element={<ResetPassword />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/dashboard"
-              element={
-                <ProtectedRoute role="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      )}
+
+      <Suspense
+        fallback={
+          <div style={{ textAlign: "center", marginTop: "2rem" }}>
+            Loading page...
+          </div>
+        }
+      >
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/shop" element={<Shop />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/products/:slug" element={<ProductDetails />} />
+          <Route path="/category/:slug" element={<CategoryPage />} />
+          <Route path="/success" element={<Success />} />
+
+          <Route
+            path="/login"
+            element={
+              !isAuth ? (
+                <Login />
+              ) : role === "admin" ? (
+                <Navigate to="/admin/dashboard" replace />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+          <Route
+            path="/register"
+            element={
+              !isAuth ? (
+                <Register />
+              ) : role === "admin" ? (
+                <Navigate to="/admin/dashboard" replace />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute role="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+
       <ToastContainer position="top-right" autoClose={3000} />
     </BrowserRouter>
   );

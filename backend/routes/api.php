@@ -34,6 +34,9 @@ Route::middleware(['jwt.auth'])->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::put('/profile', [AuthController::class, 'updateProfile']);
     Route::delete('/profile', [AuthController::class, 'destroyProfile']);
+
+    Route::post('/checkout', [CheckoutController::class, 'checkout']);
+    Route::get('/orders/verify', [CheckoutController::class, 'verify']);
 });
 
 
@@ -61,7 +64,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/logs/export', [AdminController::class, 'exportLogs']);
     });
 
-    Route::middleware(['auth:api'])->group(function () {
+    Route::middleware(['jwt.auth'])->group(function () {
         Route::get('/products/{product}/download', [DownloadController::class, 'download']);
     });
 
@@ -85,4 +88,3 @@ Route::prefix('cart')->group(function () {
     Route::delete('/', [CartController::class, 'clear']);
 });
 
-Route::post('/checkout', [CheckoutController::class, 'checkout'])->middleware('jwt.auth');
