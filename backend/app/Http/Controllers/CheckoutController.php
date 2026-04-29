@@ -92,7 +92,9 @@ public function verify(Request $request)
 {
     $sessionId = $request->query('session_id');
 
-    $order = Order::where('stripe_session_id', $sessionId)->firstOrFail();
+    $order = Order::with('items.product')
+        ->where('stripe_session_id', $sessionId)
+        ->firstOrFail();
 
     if ($order->status !== 'paid') {
         return response()->json([
@@ -102,7 +104,10 @@ public function verify(Request $request)
 
     return response()->json([
         'message' => 'Payment successful',
-        'order' => $order
+        'order' => $order,
+        'download_urls' => $order->items->map(function ($item) {
+            return url("/api/admin/products/{$item->product_id}/download");
+        })
     ]);
 }
 

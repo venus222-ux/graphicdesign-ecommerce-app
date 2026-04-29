@@ -21,3 +21,10 @@ NEXT:
 🔥 download protection (signed URLs expiring)
 🔥 “My Library” page (Gumroad clone UI)
 🔥 subscription system (SaaS upgrade)
+
+
+BUG:
+IN USER DASH:
+ - DOW FILE NOT IS ZIP
+ - PDF IS EMPTY
+ - After payment clear the cart

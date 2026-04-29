@@ -40,11 +40,8 @@ public function createCheckoutSession($order)
             'line_items' => $lineItems,
             'mode' => 'payment',
 
-            // 🔥 CRITICAL FIX (you were missing session_id)
-            'success_url' => config('app.url') . '/success?session_id={CHECKOUT_SESSION_ID}',
-
-            // ✅ cancel URL
-            'cancel_url' => config('app.url') . '/cancel',
+            'success_url' => 'http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => 'http://localhost:5173/cancel',
         ]);
     }
 }

@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\DownloadController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Product\PublicProductController;
 use App\Http\Controllers\Product\CategoryController;
@@ -37,6 +38,13 @@ Route::middleware(['jwt.auth'])->group(function () {
 
     Route::post('/checkout', [CheckoutController::class, 'checkout']);
     Route::get('/orders/verify', [CheckoutController::class, 'verify']);
+
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::get('/orders/{id}/invoice', [OrderController::class, 'show']);
+
+    Route::get('/products/{product}/download', [DownloadController::class, 'download']);
+
 });
 
 
@@ -64,9 +72,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/logs/export', [AdminController::class, 'exportLogs']);
     });
 
-    Route::middleware(['jwt.auth'])->group(function () {
-        Route::get('/products/{product}/download', [DownloadController::class, 'download']);
-    });
+
 
 });
 
