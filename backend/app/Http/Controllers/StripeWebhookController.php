@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Stripe\Webhook;
 use App\Models\Order;
 use Illuminate\Support\Facades\Log;
+use App\Jobs\SendInvoiceJob;
 
 class StripeWebhookController extends Controller
 {
@@ -14,7 +15,6 @@ class StripeWebhookController extends Controller
         $payload = $request->getContent();
         $sigHeader = $request->header('Stripe-Signature');
 
-        // 🔥 SAFE webhook parsing
         try {
             $event = Webhook::constructEvent(
                 $payload,
@@ -26,20 +26,30 @@ class StripeWebhookController extends Controller
             return response('Invalid', 400);
         }
 
-        // ✅ Handle successful checkout
         if ($event->type === 'checkout.session.completed') {
+
             $session = $event->data->object;
 
-            $order = Order::where(
-                'stripe_session_id',
-                $session->id
-            )->first();
+            $order = Order::where('stripe_session_id', $session->id)->first();
 
-            if ($order) {
-                $order->update(['status' => 'paid']);
+            if (!$order) {
+                Log::warning('Order not found');
+                return;
+            }
 
-                // 🎯 Grant access here
+            if ($order->status !== 'paid') {
+
+                $order->update([
+                    'status' => 'paid',
+                ]);
+
                 $this->grantAccess($order);
+
+                SendInvoiceJob::dispatch($order)->onQueue('emails');
+
+                Log::info('Invoice job dispatched', [
+                    'order_id' => $order->id
+                ]);
             }
         }
 
@@ -50,7 +60,7 @@ class StripeWebhookController extends Controller
     {
         foreach ($order->items as $item) {
             $order->user->products()->syncWithoutDetaching([
-              $item->product_id
+                $item->product_id
             ]);
         }
     }

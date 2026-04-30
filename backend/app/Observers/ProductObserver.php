@@ -10,16 +10,16 @@ class ProductObserver
 {
     public function created(Product $product)
     {
-        IndexProductJob::dispatch($product);
+        IndexProductJob::dispatch($product)->onQueue('search');
     }
 
     public function updated(Product $product)
     {
-        IndexProductJob::dispatch($product);
+        IndexProductJob::dispatch($product)->onQueue('search');
     }
 
     public function deleted(Product $product)
     {
-        DeleteProductJob::dispatch($product->id);
+        DeleteProductJob::dispatch($product->id)->onQueue('search');
     }
 }

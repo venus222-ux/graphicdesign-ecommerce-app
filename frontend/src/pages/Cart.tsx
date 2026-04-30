@@ -2,16 +2,26 @@ import { useCartStore } from "../store/useCartStore";
 import { Link } from "react-router-dom";
 import styles from "../styles/Cart.module.css";
 
+// ✅ VAT CONSTANT
+const VAT_RATE = 0.21;
+
 const Cart = () => {
   const { items, removeFromCart, increaseQty, decreaseQty } = useCartStore();
 
   // SAFE CALCULATIONS (no store dependency bugs)
   const totalItems = items.reduce((acc, i) => acc + i.quantity, 0);
 
-  const totalPrice = items.reduce(
+  // ✅ SUBTOTAL (before VAT)
+  const subtotal = items.reduce(
     (acc, i) => acc + i.quantity * Number(i.price || 0),
     0,
   );
+
+  // ✅ VAT
+  const vat = subtotal * VAT_RATE;
+
+  // ✅ FINAL TOTAL
+  const totalPrice = subtotal + vat;
 
   if (!items || items.length === 0) {
     return (
@@ -102,8 +112,13 @@ const Cart = () => {
           </div>
 
           <div className="d-flex justify-content-between mb-2">
-            <span className="text-muted">Shipping</span>
-            <span className="text-success">Free</span>
+            <span className="text-muted">Subtotal</span>
+            <span>${subtotal.toFixed(2)}</span>
+          </div>
+
+          <div className="d-flex justify-content-between mb-2">
+            <span className="text-muted">VAT (21%)</span>
+            <span>${vat.toFixed(2)}</span>
           </div>
 
           <hr />

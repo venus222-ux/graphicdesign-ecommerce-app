@@ -14,6 +14,8 @@ class IndexProductJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+
+
     // For PHP 8+ constructor property promotion
     public function __construct(public Product $product)
     {

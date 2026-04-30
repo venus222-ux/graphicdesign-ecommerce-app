@@ -22,7 +22,7 @@ class CheckoutController extends Controller
     return 'cart_' . auth()->id();
 }
 
-  public function checkout(Request $request, StripeService $stripe)
+public function checkout(Request $request, StripeService $stripe)
 {
     $cart = $request->input('items', []);
 
@@ -42,7 +42,7 @@ class CheckoutController extends Controller
         ]);
 
         foreach ($cart as $item) {
-            $product = Product::findOrFail($item['id']); // ⚠️ from frontend
+            $product = Product::findOrFail($item['id']);
 
             if (!$product->is_published) {
                 throw new \Exception('Product unavailable');
@@ -59,15 +59,26 @@ class CheckoutController extends Controller
             ]);
         }
 
-        $order->update(['total' => $total]);
+        // 🔥 VAT CALCULATION
+        $vatRate = 0.21;
+        $subtotal = $total;
+        $vat = $subtotal * $vatRate;
+        $grandTotal = $subtotal + $vat;
 
-        // 🔥 REQUIRED
+        // 💾 Update order BEFORE Stripe session
+        $order->update([
+            'total' => $grandTotal,
+            'vat' => $vat * 100,
+        ]);
+
         $order->load('items.product');
 
+        // 🚀 CREATE STRIPE SESSION
         $session = $stripe->createCheckoutSession($order);
 
+        // 💾 NOW SAVE SESSION ID (AFTER IT EXISTS)
         $order->update([
-            'stripe_session_id' => $session->id
+            'stripe_session_id' => $session->id,
         ]);
 
         DB::commit();
@@ -88,6 +99,7 @@ class CheckoutController extends Controller
     }
 }
 
+
 public function verify(Request $request)
 {
     $sessionId = $request->query('session_id');
@@ -96,18 +108,19 @@ public function verify(Request $request)
         ->where('stripe_session_id', $sessionId)
         ->firstOrFail();
 
+    // 🔥 SAFE CHECK: allow Stripe delay
     if ($order->status !== 'paid') {
+
+        // OPTIONAL: auto-retry sync with Stripe webhook fallback
         return response()->json([
-            'message' => 'Payment not confirmed yet'
-        ], 400);
+            'message' => 'Payment processing',
+            'order' => $order
+        ], 202);
     }
 
     return response()->json([
         'message' => 'Payment successful',
         'order' => $order,
-        'download_urls' => $order->items->map(function ($item) {
-            return url("/api/admin/products/{$item->product_id}/download");
-        })
     ]);
 }
 

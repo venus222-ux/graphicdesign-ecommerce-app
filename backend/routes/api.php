@@ -41,7 +41,7 @@ Route::middleware(['jwt.auth'])->group(function () {
 
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
-    Route::get('/orders/{id}/invoice', [OrderController::class, 'show']);
+    Route::get('/orders/{id}/invoice', [OrderController::class, 'invoice']);
 
     Route::get('/products/{product}/download', [DownloadController::class, 'download']);
 

@@ -15,16 +15,26 @@ const Dashboard = () => {
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
 
+      // 🔥 Extract filename from headers (if backend sends it)
+      const disposition = res.headers["content-disposition"];
+      let filename = `invoice-${id}.pdf`;
+
+      if (disposition) {
+        const match = disposition.match(/filename="(.+)"/);
+        if (match) filename = match[1];
+      }
+
       link.href = url;
-      link.download = `invoice-${id}.pdf`;
+      link.download = filename; // ✅ dynamic filename
+      document.body.appendChild(link); // safer for some browsers
       link.click();
+      document.body.removeChild(link);
 
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Invoice download failed", err);
     }
   };
-
   const downloadProduct = async (id: number) => {
     try {
       const res = await API.get(`/products/${id}/download`, {

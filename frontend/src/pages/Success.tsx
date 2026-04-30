@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../api";
 import styles from "../styles/Success.module.css";
+import { useCartStore } from "../store/useCartStore";
 
 const Success = () => {
   const [status, setStatus] = useState<"loading" | "success" | "error">(
@@ -8,6 +9,9 @@ const Success = () => {
   );
 
   const [order, setOrder] = useState<any>(null);
+
+  // 🛒 ADD THIS
+  const clearCart = useCartStore((state) => state.clearCart);
 
   const downloadProduct = async (id: number) => {
     try {
@@ -19,7 +23,10 @@ const Success = () => {
       const link = document.createElement("a");
 
       link.href = url;
-      link.download = `product-${id}`;
+
+      // ✅ FIX: add ZIP extension
+      link.download = `product-${id}.zip`;
+
       link.click();
 
       window.URL.revokeObjectURL(url);
@@ -43,6 +50,9 @@ const Success = () => {
         setOrder(res.data.order);
         setStatus("success");
 
+        // 🛒 CLEAR CART AFTER SUCCESS
+        clearCart();
+
         // 🚀 AUTO DOWNLOAD FIRST PRODUCT (SAFE)
         const firstProductId = res.data.order?.items?.[0]?.product_id;
 
@@ -50,8 +60,21 @@ const Success = () => {
           downloadProduct(firstProductId);
         }
       })
-      .catch(() => setStatus("error"));
-  }, []);
+      .catch((err) => {
+        // 🔥 Payment still processing (webhook delay)
+        if (err.response?.status === 202) {
+          setStatus("loading");
+
+          setTimeout(() => {
+            window.location.reload();
+          }, 3000);
+
+          return;
+        }
+
+        setStatus("error");
+      });
+  }, [clearCart]);
 
   return (
     <div className={styles.container}>

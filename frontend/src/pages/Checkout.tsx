@@ -5,17 +5,25 @@ import API from "../api";
 import styles from "../styles/Checkout.module.css";
 import { useStore } from "../store/useStore";
 
+const VAT_RATE = 0.21;
+
 const Checkout = () => {
   const navigate = useNavigate();
 
   const { items } = useCartStore();
   const [loading, setLoading] = useState(false);
 
-  // SAFE TOTAL CALCULATION (no dependency on store method)
-  const totalPrice = items.reduce(
+  // ✅ SUBTOTAL
+  const subtotal = items.reduce(
     (acc, i) => acc + i.quantity * Number(i.price || 0),
     0,
   );
+
+  // ✅ VAT
+  const vat = subtotal * VAT_RATE;
+
+  // ✅ TOTAL
+  const totalPrice = subtotal + vat;
 
   const handleCheckout = async () => {
     const token = useStore.getState().token;
@@ -101,10 +109,15 @@ const Checkout = () => {
           <div className="mt-4 pt-3 border-top">
             <div className="d-flex justify-content-between mb-2">
               <span>Subtotal</span>
-              <span>${totalPrice.toFixed(2)}</span>
+              <span>${subtotal.toFixed(2)}</span>
             </div>
 
-            <div className="d-flex justify-content-between fw-bold fs-5">
+            <div className="d-flex justify-content-between mb-2">
+              <span>VAT (21%)</span>
+              <span>${vat.toFixed(2)}</span>
+            </div>
+
+            <div className="d-flex justify-content-between fw-bold fs-5 mt-2">
               <span>Total</span>
               <span>${totalPrice.toFixed(2)}</span>
             </div>
