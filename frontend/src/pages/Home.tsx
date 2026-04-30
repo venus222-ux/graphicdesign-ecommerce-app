@@ -11,14 +11,6 @@ const Hero = () => (
       Premium UI kits, templates, and courses curated by the world's top
       creators.
     </p>
-    <div className={`${styles.searchWrapper} mx-auto position-relative`}>
-      <input
-        type="text"
-        placeholder="Search assets (e.g. 'Dashboard UI')"
-        className="form-control form-control-lg shadow-sm rounded-pill ps-5"
-      />
-      <span className={styles.searchIcon}>🔍</span>
-    </div>
   </div>
 );
 

@@ -2,46 +2,41 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useStore } from "../store/useStore";
 import { logoutRequest } from "../api";
 import styles from "../styles/Navbar.module.css";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ShoppingCart } from "lucide-react";
 import { useCartStore } from "../store/useCartStore";
 
 export default function Navbar() {
   const { isAuth, initialized, logout, theme, toggleTheme, role } = useStore();
   const navigate = useNavigate();
-
   const [categories, setCategories] = useState<
     { name: string; slug: string }[]
   >([]);
   const [open, setOpen] = useState(false);
 
-  // 🛒 CART BADGE (FIXED - derived state)
   const totalItems = useCartStore((s) =>
     s.items.reduce((acc, i) => acc + i.quantity, 0),
   );
 
+  // For shake animation when item is added
+  const [justAdded, setJustAdded] = useState(false);
+  const prevTotalRef = useRef(totalItems);
+
+  useEffect(() => {
+    if (totalItems > prevTotalRef.current) {
+      setJustAdded(true);
+      const timer = setTimeout(() => setJustAdded(false), 400);
+      return () => clearTimeout(timer);
+    }
+    prevTotalRef.current = totalItems;
+  }, [totalItems]);
+
   useEffect(() => {
     fetch("/api/categories")
       .then((res) => res.json())
-      .then((data) => {
-        setCategories(data.data || data || []);
-      })
+      .then((data) => setCategories(data.data || data || []))
       .catch((err) => console.error("Failed to load categories", err));
   }, []);
-
-  if (!initialized) {
-    return (
-      <div
-        className={`${styles.navWrapper} ${
-          theme === "dark" ? styles.dark : ""
-        }`}
-      >
-        <nav className={styles.glassNav}>
-          <span>Loading...</span>
-        </nav>
-      </div>
-    );
-  }
 
   const handleLogout = async () => {
     try {
@@ -52,6 +47,35 @@ export default function Navbar() {
       navigate("/login");
     }
   };
+
+  // 🛒 Enhanced Cart Button component with modern UI & animation
+  const CartButton = () => (
+    <Link
+      to="/cart"
+      className={`${styles.cartContainer} ${justAdded ? styles.added : ""}`}
+      title="View shopping cart"
+      aria-label={`Shopping cart with ${totalItems} items`}
+    >
+      <ShoppingCart size={22} className={styles.cartIcon} />
+      {totalItems > 0 && (
+        <span key={totalItems} className={styles.cartBadge}>
+          {totalItems > 99 ? "99+" : totalItems}
+        </span>
+      )}
+    </Link>
+  );
+
+  if (!initialized) {
+    return (
+      <div
+        className={`${styles.navWrapper} ${theme === "dark" ? styles.dark : ""}`}
+      >
+        <nav className={styles.glassNav}>
+          <span>Loading...</span>
+        </nav>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -64,14 +88,12 @@ export default function Navbar() {
         </Link>
 
         <div className={styles.navGroup}>
-          {/* DROPDOWN */}
           <div
             className={styles.dropdown}
             onMouseEnter={() => setOpen(true)}
             onMouseLeave={() => setOpen(false)}
           >
             <span className={styles.link}>Shop ▾</span>
-
             {open && (
               <div className={styles.dropdownMenu}>
                 <Link
@@ -81,9 +103,7 @@ export default function Navbar() {
                 >
                   All Products
                 </Link>
-
                 <hr />
-
                 {categories.map((cat) => (
                   <Link
                     key={cat.slug}
@@ -108,7 +128,6 @@ export default function Navbar() {
               >
                 Dashboard
               </NavLink>
-
               {role === "admin" && (
                 <NavLink
                   to="/admin/dashboard"
@@ -119,7 +138,6 @@ export default function Navbar() {
                   Admin
                 </NavLink>
               )}
-
               <NavLink
                 to="/profile"
                 className={({ isActive }) =>
@@ -128,15 +146,7 @@ export default function Navbar() {
               >
                 Profile
               </NavLink>
-
-              {/* 🛒 CART ICON (ONLY FOR LOGGED USERS OR MOVE IT OUTSIDE IF YOU WANT PUBLIC CART) */}
-              <Link to="/cart" className={styles.cartIcon}>
-                <ShoppingCart size={20} />
-
-                {totalItems > 0 && (
-                  <span className={styles.cartBadge}>{totalItems}</span>
-                )}
-              </Link>
+              <CartButton />
             </>
           ) : (
             <>
@@ -148,7 +158,6 @@ export default function Navbar() {
               >
                 Login
               </NavLink>
-
               <NavLink
                 to="/register"
                 className={({ isActive }) =>
@@ -157,15 +166,7 @@ export default function Navbar() {
               >
                 Register
               </NavLink>
-
-              {/* 🛒 CART ALSO FOR GUESTS (RECOMMENDED FOR ECOMMERCE) */}
-              <Link to="/cart" className={styles.cartIcon}>
-                <ShoppingCart size={20} />
-
-                {totalItems > 0 && (
-                  <span className={styles.cartBadge}>{totalItems}</span>
-                )}
-              </Link>
+              <CartButton />
             </>
           )}
         </div>
@@ -174,13 +175,10 @@ export default function Navbar() {
           <button
             className={styles.iconBtn}
             onClick={toggleTheme}
-            aria-label={`Switch to ${
-              theme === "light" ? "dark" : "light"
-            } mode`}
+            aria-label="Toggle Theme"
           >
             {theme === "light" ? "🌙" : "☀️"}
           </button>
-
           {isAuth && (
             <button className={styles.logoutBtn} onClick={handleLogout}>
               Logout

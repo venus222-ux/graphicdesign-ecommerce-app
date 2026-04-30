@@ -12,6 +12,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Product\PublicProductController;
 use App\Http\Controllers\Product\CategoryController;
+use App\Http\Controllers\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -22,6 +23,8 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])
     ->name('password.reset');
 Route::post('/refresh', [AuthController::class, 'refresh']);
+
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 
 // Protected routes with auth + throttle
 Route::middleware(['jwt.auth'])->group(function () {

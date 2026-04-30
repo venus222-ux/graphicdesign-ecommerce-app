@@ -35,12 +35,12 @@ class InvoiceMail extends Mailable
         );
     }
 
-    public function attachments(): array
-    {
-        return [
-            Attachment::fromPath($this->pdfPath)
-                ->as("invoice-{$this->order->invoice_number}.pdf")
-                ->withMime('application/pdf'),
-        ];
-    }
+  public function attachments(): array
+{
+    return [
+        Attachment::fromData(fn () => file_get_contents($this->pdfPath),
+        "invoice-{$this->order->invoice_number}.pdf")
+        ->withMime('application/pdf'),
+    ];
+}
 }
