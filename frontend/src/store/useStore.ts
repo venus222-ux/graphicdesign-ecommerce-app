@@ -1,79 +1,94 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { Role, User } from "../types";
+import API from "../api";
 
-interface StoreState {
-  token: string | null;
-  role: Role | null;
-  user: User | null;
+interface AppState {
   isAuth: boolean;
-  initialized: boolean;
+  token: string | null;
+  role: string | null;
   theme: "light" | "dark";
+  initialized: boolean;
 
   setAuth: (token: string, role: string) => void;
-  setUser: (user: User) => void;
   logout: () => void;
-  setInitialized: (value: boolean) => void;
+  setToken: (token: string | null) => void;
   toggleTheme: () => void;
+  setInitialized: (value: boolean) => void;
+
   startTokenRefreshLoop: () => void;
+  stopTokenRefreshLoop: () => void;
 }
 
-export const useStore = create<StoreState>()(
-  persist(
-    (set) => ({
-      token: null,
-      role: null,
-      user: null,
-      isAuth: false,
-      initialized: false,
-      theme: "light",
+export const useStore = create<AppState>((set, get) => {
+  let intervalId: ReturnType<typeof setInterval> | null = null;
 
-      setAuth: (token: string, role: string) => {
-        // 🔥 normalize role: lowercase + trim
-        const normalizedRole = role?.toLowerCase().trim();
-        const validRole: Role | null = ["user", "moderator", "admin"].includes(
-          normalizedRole,
-        )
-          ? (normalizedRole as Role)
-          : null;
+  return {
+    isAuth: false,
+    token: null,
+    role: null,
+    initialized: false,
+    theme: (localStorage.getItem("theme") as "light" | "dark") || "light",
 
-        set({
-          token,
-          role: validRole,
-          isAuth: !!token && !!validRole,
-        });
-      },
-
-      setUser: (user: User) => set({ user }),
-
-      logout: () =>
-        set({
-          token: null,
-          role: null,
-          user: null,
-          isAuth: false,
-        }),
-
-      setInitialized: (value: boolean) => set({ initialized: value }),
-
-      toggleTheme: () =>
-        set((state) => ({
-          theme: state.theme === "light" ? "dark" : "light",
-        })),
-
-      startTokenRefreshLoop: () => {
-        console.log("🔄 Token refresh loop started");
-        // aici poți adăuga logica reală de refresh token
-      },
-    }),
-    {
-      name: "app-storage",
-      partialize: (state) => ({
-        token: state.token,
-        role: state.role,
-        user: state.user,
-        theme: state.theme,
+    setAuth: (token, role) =>
+      set({
+        isAuth: true,
+        token,
+        role,
       }),
+
+    logout: () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+
+      set({
+        isAuth: false,
+        token: null,
+        role: null,
+      });
     },
-  ),
-);
+
+    setToken: (token) =>
+      set((state) => ({
+        token,
+        isAuth: !!token,
+        role: token ? state.role : null,
+      })),
+
+    toggleTheme: () => {
+      set((state) => {
+        const newTheme = state.theme === "light" ? "dark" : "light";
+        localStorage.setItem("theme", newTheme);
+        document.documentElement.setAttribute("data-bs-theme", newTheme);
+        return { theme: newTheme };
+      });
+    },
+
+    setInitialized: (value) => set({ initialized: value }),
+
+    stopTokenRefreshLoop: () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    },
+
+    startTokenRefreshLoop: () => {
+      if (intervalId) return;
+
+      const refreshInterval = 1000 * 60 * 10; // 10 min
+
+      intervalId = setInterval(async () => {
+        try {
+          const res = await API.post("/refresh");
+          const { token, role } = res.data;
+
+          get().setAuth(token, role);
+        } catch (err) {
+          console.error("Failed to refresh token:", err);
+          get().logout();
+        }
+      }, refreshInterval);
+    },
+  };
+});
