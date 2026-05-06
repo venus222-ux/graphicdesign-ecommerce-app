@@ -7,10 +7,12 @@ import ProductsTab from "../components/Admin/ProductsTab";
 import CategoriesTab from "../components/Admin/CategoriesTab";
 import LogsTab from "../components/Admin/LogsTab";
 import UsersTab from "../components/Admin/UsersTab";
+import OrdersTab from "../components/Admin/OrdersTab";
+import RefundModal from "../components/Admin/RefundModal";
 
 import { Search, Download } from "lucide-react";
 
-type TabType = "products" | "categories" | "logs" | "users";
+type TabType = "products" | "categories" | "logs" | "users" | "orders";
 
 const AdminDashboard: React.FC = () => {
   const {
@@ -27,20 +29,20 @@ const AdminDashboard: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<TabType>("products");
 
+  // REFUND STATE
+  const [refundOpen, setRefundOpen] = useState(false);
+  const [selectedOrder] = useState<any>(null);
+
   // INIT
   useEffect(() => {
     fetchCategories();
     fetchProducts(1);
   }, []);
 
-  // USERS LOAD
   useEffect(() => {
-    if (activeTab === "users") {
-      fetchUsers();
-    }
+    if (activeTab === "users") fetchUsers();
   }, [activeTab]);
 
-  // LOGS SEARCH TRIGGER
   useEffect(() => {
     if (activeTab === "logs") {
       fetchLogs(1, searchTerm);
@@ -78,6 +80,7 @@ const AdminDashboard: React.FC = () => {
         </header>
 
         {/* CONTENT */}
+        {/* CONTENT */}
         <main className={styles.content}>
           <div className={styles.welcome}>
             <h1>
@@ -85,25 +88,36 @@ const AdminDashboard: React.FC = () => {
               {activeTab === "categories" && "Category Management"}
               {activeTab === "logs" && "System Logs"}
               {activeTab === "users" && "User Management"}
+              {activeTab === "orders" && "Orders Management"}
             </h1>
-
-            <p>
-              {activeTab === "products" && "Manage your product catalog."}
-              {activeTab === "categories" && "Organize your categories."}
-              {activeTab === "logs" && "Track system activity."}
-              {activeTab === "users" && "Manage registered users."}
-            </p>
           </div>
 
           {activeTab === "products" && <ProductsTab />}
+
           {activeTab === "categories" && <CategoriesTab />}
+
           {activeTab === "logs" && <LogsTab />}
 
           {activeTab === "users" && (
             <UsersTab users={users} onDelete={deleteUser} />
           )}
+
+          {activeTab === "orders" && <OrdersTab />}
         </main>
       </div>
+
+      {/* 🔥 REFUND MODAL GLOBAL */}
+      <RefundModal
+        isOpen={refundOpen}
+        onClose={() => setRefundOpen(false)}
+        orderId={selectedOrder?.id}
+        maxAmount={selectedOrder?.total}
+        onSuccess={() => {
+          setRefundOpen(false);
+          // refresh data
+          fetchProducts(1);
+        }}
+      />
     </div>
   );
 };

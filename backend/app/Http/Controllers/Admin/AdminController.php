@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\MongoLog;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -136,5 +137,59 @@ public function deleteUser($id)
 
     $user->delete();
     return response()->json(['message' => 'User deleted successfully']);
+}
+
+
+/**
+ * Get paginated orders with filters
+ */
+public function orders(Request $request)
+{
+    $perPage = $request->input('per_page', 20);
+    $search = $request->input('search');
+    $status = $request->input('status');
+    $startDate = $request->input('start_date');
+    $endDate = $request->input('end_date');
+
+    $query = Order::with(['user', 'items.product'])
+        ->latest();
+
+    /* ================= SEARCH ================= */
+    if (!empty($search)) {
+        $query->where(function ($q) use ($search) {
+            $q->where('id', 'like', "%{$search}%")
+              ->orWhereHas('user', function ($user) use ($search) {
+                  $user->where('name', 'like', "%{$search}%")
+                       ->orWhere('email', 'like', "%{$search}%");
+              });
+        });
+    }
+
+    /* ================= STATUS FILTER (FIXED) ================= */
+    if (!empty($status) && $status !== 'all') {
+        $query->whereRaw('LOWER(status) = ?', [strtolower($status)]);
+    }
+
+    /* ================= DATE FILTER ================= */
+    if (!empty($startDate)) {
+        $query->whereDate('created_at', '>=', $startDate);
+    }
+
+    if (!empty($endDate)) {
+        $query->whereDate('created_at', '<=', $endDate);
+    }
+
+    /* ================= PAGINATION ================= */
+    $orders = $query->paginate($perPage);
+
+    return response()->json([
+        'data' => $orders->items(),
+        'pagination' => [
+            'current_page' => $orders->currentPage(),
+            'last_page' => $orders->lastPage(),
+            'per_page' => $orders->perPage(),
+            'total' => $orders->total(),
+        ]
+    ]);
 }
 }

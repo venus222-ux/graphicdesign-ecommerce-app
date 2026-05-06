@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
@@ -14,7 +15,6 @@ use App\Http\Controllers\Product\PublicProductController;
 use App\Http\Controllers\Product\CategoryController;
 use App\Http\Controllers\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
-
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -52,32 +52,36 @@ Route::middleware(['jwt.auth'])->group(function () {
 
 
 // Admin routes
-Route::prefix('admin')->group(function () {
+Route::prefix('admin')->middleware(['jwt.auth', 'role:admin'])->group(function () {
 
-    Route::middleware(['auth.jwt', 'role:admin'])->group(function () {
-        Route::get('/dashboard', [AdminController::class, 'dashboard']);
-        Route::get('/users', [AdminController::class, 'users']); // READ
-        Route::delete('/users/{id}', [AdminController::class, 'deleteUser']); // DELETE
-    });
+    Route::get('/dashboard', [AdminController::class, 'dashboard']);
 
-    Route::middleware(['jwt.auth'])->group(function () {
-        Route::get('/categories', [AdminCategoryController::class, 'index']);
-        Route::post('/categories', [AdminCategoryController::class, 'store']);
-        Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy']);
+    Route::get('/users', [AdminController::class, 'users']);
+    Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
 
-        Route::get('/products', [ProductController::class, 'index']);
-        Route::post('/products', [ProductController::class, 'store']);
-        Route::put('/products/{product}', [ProductController::class, 'update']);
-        Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+    Route::post('/orders/{id}/refund', [RefundController::class, 'refund']);
+    Route::get('/refunds', [RefundController::class, 'index']);
 
-        Route::get('/logs', [AdminController::class, 'logs']);
-        Route::delete('/logs/{id}', [AdminController::class, 'deleteLog']);
-        Route::get('/logs/export', [AdminController::class, 'exportLogs']);
-    });
+    Route::get('/categories', [AdminCategoryController::class, 'index']);
+    Route::post('/categories', [AdminCategoryController::class, 'store']);
+    Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy']);
 
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::post('/products', [ProductController::class, 'store']);
+    Route::put('/products/{product}', [ProductController::class, 'update']);
+    Route::delete('/products/{product}', [ProductController::class, 'destroy']);
 
+    Route::get('/logs', [AdminController::class, 'logs']);
+    Route::delete('/logs/{id}', [AdminController::class, 'deleteLog']);
+    Route::get('/logs/export', [AdminController::class, 'exportLogs']);
+
+    Route::get('/orders', [AdminController::class, 'orders']);
+    Route::get('/orders/{id}', [OrderController::class, 'adminShow']);        // ← Add this
+    Route::get('/orders/{id}/invoice', [OrderController::class, 'adminInvoice']);
 
 });
+
+
 
 // PUBLIC SHOP PAGE MARKETPLACE
 Route::get('/products', [PublicProductController::class, 'index']);

@@ -12,13 +12,15 @@ class Order extends Model implements HasMedia
 use InteractsWithMedia;
 
 
-    protected $fillable = [
-        'user_id',
-        'total',
-        'status',
-        'stripe_session_id'
-    ];
-
+   protected $fillable = [
+      'user_id',
+      'total',
+      'status',
+      'stripe_session_id',
+      'payment_intent_id',   // ← must be here
+      'vat',
+      'refunded_total',
+   ];
     protected static function boot()
 {
     parent::boot();
@@ -55,5 +57,10 @@ use InteractsWithMedia;
             'qty' => $i->quantity,
         ])
     ];
+}
+
+public function refunds()
+{
+    return $this->hasMany(\App\Models\Refund::class);
 }
 }

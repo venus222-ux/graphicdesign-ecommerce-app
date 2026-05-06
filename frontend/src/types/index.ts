@@ -152,3 +152,32 @@ export interface LogsResponse {
   from: number;
   to: number;
 }
+
+export interface Order {
+  id: number;
+  total: number;
+  status: string;
+  refunded_total?: number;
+  created_at: string;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+}
+
+export interface OrdersResponse {
+  data: Order[];
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+}
+
+export interface OrderFilters {
+  search?: string;
+  status?: string;
+  start_date?: string;
+  end_date?: string;
+  per_page?: number;
+}

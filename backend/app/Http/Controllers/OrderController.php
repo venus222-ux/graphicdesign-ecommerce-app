@@ -20,44 +20,51 @@ class OrderController extends Controller
     {
         return Order::with('items.product')
             ->where('user_id', auth()->id())
-            ->findOrFail($id) ;
+            ->findOrFail($id);
     }
 
+    // ================== ADMIN METHODS ==================
 
-public function invoice($id)
-{
-    $order = Order::with(['items.product', 'user'])
-        ->where('user_id', auth()->id())
-        ->findOrFail($id);
+    public function adminShow($id)
+    {
+        $order = Order::with(['items.product', 'user'])
+            ->findOrFail($id);
 
-    $fileName = "invoice-{$order->invoice_number}.pdf";
-
-    // ✅ If already exists → return it (NO regenerate)
-    $existing = $order->getFirstMedia('invoices');
-
-    if ($existing) {
-        return response()->download($existing->getPath(), $fileName);
+        return response()->json($order);
     }
 
-    // 🔥 1. Ensure directory exists (GOOD PRACTICE, but not required for Spatie)
-    Storage::makeDirectory('invoices');
+    public function adminInvoice($id)
+    {
+        $order = Order::with(['items.product', 'user'])
+            ->findOrFail($id);
 
-    // 🔥 2. Generate PDF
-    $pdf = Pdf::loadView('emails.invoice', compact('order'));
+        $fileName = "invoice-{$order->invoice_number}.pdf";
 
-    // 🔥 3. Save via Spatie (THIS is what matters)
-    $order
-        ->addMediaFromString($pdf->output())
-        ->usingFileName($fileName)
-        ->toMediaCollection('invoices');
+        $existing = $order->getFirstMedia('invoices');
 
-    // 🔥 4. Retrieve saved file
-    $media = $order->getFirstMedia('invoices');
+        if ($existing) {
+            return response()->download($existing->getPath(), $fileName);
+        }
 
-    if (!$media) {
-        abort(500, 'Invoice generation failed');
+        // Generate PDF
+        $pdf = Pdf::loadView('emails.invoice', compact('order'))
+                  ->setPaper('a4', 'portrait');
+
+        $order
+            ->addMediaFromString($pdf->output())
+            ->usingFileName($fileName)
+            ->toMediaCollection('invoices');
+
+        return response()->download(
+            $order->getFirstMedia('invoices')->getPath(),
+            $fileName
+        );
     }
 
-    return response()->download($media->getPath(), $fileName);
-}
+    // Helper method (in case you want to reuse it later)
+    private function generateInvoicePdf($order)
+    {
+        return Pdf::loadView('emails.invoice', compact('order'))
+                  ->setPaper('a4', 'portrait');
+    }
 }

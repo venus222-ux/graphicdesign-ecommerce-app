@@ -5,12 +5,15 @@ import {
   Layers,
   Database,
   Users,
+  ShoppingCart,
 } from "lucide-react";
 import styles from "../../styles/AdminDashboard.module.css";
 
 interface AdminSidebarProps {
-  activeTab: "products" | "categories" | "logs" | "users";
-  setActiveTab: (tab: "products" | "categories" | "logs" | "users") => void;
+  activeTab: "products" | "categories" | "logs" | "users" | "orders";
+  setActiveTab: (
+    tab: "products" | "categories" | "logs" | "users" | "orders",
+  ) => void;
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -33,6 +36,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         </li>
 
         <li
+          className={activeTab === "orders" ? styles.active : ""}
+          onClick={() => setActiveTab("orders")}
+        >
+          <ShoppingCart size={18} /> <span>Orders</span>
+        </li>
+
+        <li
           className={activeTab === "categories" ? styles.active : ""}
           onClick={() => setActiveTab("categories")}
         >
@@ -46,7 +56,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           <Database size={18} /> <span>Upload Logs</span>
         </li>
 
-        {/* ✅ USERS TAB ADDED */}
         <li
           className={activeTab === "users" ? styles.active : ""}
           onClick={() => setActiveTab("users")}
