@@ -67,4 +67,35 @@ class OrderController extends Controller
         return Pdf::loadView('emails.invoice', compact('order'))
                   ->setPaper('a4', 'portrait');
     }
+
+    public function invoice($id)
+{
+    $order = Order::with(['items.product'])
+        ->where('user_id', auth()->id())
+        ->findOrFail($id);
+
+    $fileName = "invoice-{$order->invoice_number}.pdf";
+
+    $existing = $order->getFirstMedia('invoices');
+
+    if ($existing) {
+        return response()->download(
+            $existing->getPath(),
+            $fileName
+        );
+    }
+
+    $pdf = Pdf::loadView('emails.invoice', compact('order'))
+        ->setPaper('a4', 'portrait');
+
+    $order
+        ->addMediaFromString($pdf->output())
+        ->usingFileName($fileName)
+        ->toMediaCollection('invoices');
+
+    return response()->download(
+        $order->getFirstMedia('invoices')->getPath(),
+        $fileName
+    );
+}
 }

@@ -21,62 +21,81 @@ class CheckoutController extends Controller
 
     return 'cart_' . auth()->id();
 }
-
 public function checkout(Request $request, StripeService $stripe)
 {
     $cart = $request->input('items', []);
 
     if (empty($cart)) {
-        return response()->json(['message' => 'Cart is empty'], 400);
+        return response()->json([
+            'message' => 'Cart is empty'
+        ], 400);
     }
 
     DB::beginTransaction();
 
     try {
-        $total = 0;
+        $subtotal = 0;
 
+        // CREATE ORDER
         $order = Order::create([
             'user_id' => auth()->id(),
+            'subtotal' => 0,
+            'vat_percent' => 21,
+            'vat' => 0,
             'total' => 0,
-            'status' => 'pending'
+            'status' => 'pending',
         ]);
 
+        // CREATE ORDER ITEMS
         foreach ($cart as $item) {
+
             $product = Product::findOrFail($item['id']);
 
             if (!$product->is_published) {
                 throw new \Exception('Product unavailable');
             }
 
-            $price = $product->price;
-            $total += $price * $item['quantity'];
+            $quantity = (int) $item['quantity'];
+
+            $price = (float) $product->price;
+
+            $lineTotal = $price * $quantity;
+
+            $subtotal += $lineTotal;
 
             OrderItem::create([
                 'order_id' => $order->id,
                 'product_id' => $product->id,
-                'quantity' => $item['quantity'],
-                'price' => $price,
+                'quantity' => $quantity,
+                'price' => $price, // snapshot price
             ]);
         }
 
-        // 🔥 VAT CALCULATION
-        $vatRate = 0.21;
-        $subtotal = $total;
-        $vat = $subtotal * $vatRate;
+        // VAT CALCULATION
+        $vatPercent = 21;
+
+        $vat = ($subtotal * $vatPercent) / 100;
+
         $grandTotal = $subtotal + $vat;
 
-        // 💾 Update order BEFORE Stripe session
+        // UPDATE ORDER TOTALS
         $order->update([
-            'total' => $grandTotal,
-            'vat' => $vat * 100,
+            'subtotal' => round($subtotal, 2),
+            'vat_percent' => $vatPercent,
+            'vat' => round($vat, 2),
+            'total' => round($grandTotal, 2),
         ]);
 
-        $order->load('items.product');
+        // LOAD RELATIONS
+        $order->load([
+            'items.product',
+            'user'
+        ]);
 
-        // 🚀 CREATE STRIPE SESSION
+        // CREATE STRIPE SESSION
         $session = $stripe->createCheckoutSession($order);
 
-        // 💾 NOW SAVE SESSION ID (AFTER IT EXISTS)
+        // SAVE STRIPE SESSION ID
         $order->update([
             'stripe_session_id' => $session->id,
         ]);
@@ -88,17 +107,20 @@ public function checkout(Request $request, StripeService $stripe)
         ]);
 
     } catch (\Throwable $e) {
+
         DB::rollBack();
 
-        Log::error($e);
+        Log::error('Checkout failed', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
 
         return response()->json([
             'message' => 'Checkout failed',
-            'error' => $e->getMessage()
+            'error' => $e->getMessage(),
         ], 500);
     }
 }
-
 
 public function verify(Request $request)
 {
