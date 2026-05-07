@@ -13,6 +13,7 @@ class ResetPasswordNotification extends Notification implements ShouldQueue
     use Queueable;
 
     protected $token;
+    
 
     public function __construct(string $token) {
         $this->token = $token;

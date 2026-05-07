@@ -3,46 +3,49 @@
 namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use App\Events\FileUploaded;
-use App\Listeners\LogUploadToMongo;
+use Illuminate\Support\Facades\Event;
+
+use App\Events\Auth\PasswordResetRequested;
 use App\Events\Auth\UserRegistered;
 use App\Events\Auth\UserLoggedIn;
-use App\Events\Auth\PasswordResetRequested;
+use App\Events\FileUploaded;
 
-// Listeners
+use App\Listeners\SendResetPasswordNotification;
 use App\Listeners\SendWelcomeEmail;
 use App\Listeners\LogUserLogin;
-use App\Listeners\SendResetPasswordNotification;
+use App\Listeners\LogUploadToMongo;
 
 class EventServiceProvider extends ServiceProvider
 {
-    /**
-     * The event to listener mappings for the application.
-     *
-     * @var array
-     */
     protected $listen = [
-        FileUploaded::class => [
-            LogUploadToMongo::class,
-        ],
-        UserRegistered::class => [
-            SendWelcomeEmail::class,
-        ],
-
-        UserLoggedIn::class => [
-            LogUserLogin::class,
-        ],
-
-        PasswordResetRequested::class => [
-            SendResetPasswordNotification::class,
-        ],
+        FileUploaded::class   => [LogUploadToMongo::class],
+        UserRegistered::class => [SendWelcomeEmail::class],
+        UserLoggedIn::class   => [LogUserLogin::class],
+        // PasswordResetRequested is handled manually below
     ];
 
-    /**
-     * Register any events for your application.
-     */
     public function boot(): void
     {
         parent::boot();
+
+        // === CRITICAL: Disable discovery completely ===
+        static::disableEventDiscovery();
+
+        // Remove any existing registrations for this event
+        Event::forget(PasswordResetRequested::class);
+
+        // Register exactly once
+        Event::listen(
+            PasswordResetRequested::class,
+            SendResetPasswordNotification::class
+        );
+    }
+
+    /**
+     * Explicitly disable discovery
+     */
+    public function shouldDiscoverEvents(): bool
+    {
+        return false;
     }
 }
