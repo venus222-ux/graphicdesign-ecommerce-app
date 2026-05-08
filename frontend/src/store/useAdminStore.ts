@@ -295,6 +295,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       const formData = new FormData();
 
+      // Text fields
       formData.append("title", productForm.title ?? "");
       formData.append("short_description", productForm.short_description ?? "");
       formData.append("description", productForm.description ?? "");
@@ -303,31 +304,37 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       formData.append("category_id", String(productForm.category_id ?? ""));
       formData.append("is_published", productForm.is_published ? "1" : "0");
 
+      // === MULTIPLE PREVIEW IMAGES ===
       if (Array.isArray(productForm.preview_images)) {
         productForm.preview_images.forEach((file) => {
-          formData.append("preview_images", file);
+          formData.append("preview_images[]", file); // ← Fixed
         });
       }
 
+      // Asset file
       if (productForm.asset_file instanceof File) {
         formData.append("asset_file", productForm.asset_file);
       }
 
-      if (editingProduct) {
-        await API.post(
-          `/admin/products/${editingProduct.id}?_method=PUT`,
-          formData,
-        );
-        toast.success("Product updated");
-      } else {
-        await API.post("/admin/products", formData);
-        toast.success("Product created");
-      }
+      const url = editingProduct
+        ? `/admin/products/${editingProduct.id}`
+        : "/admin/products";
+
+      const method = editingProduct ? "put" : "post";
+
+      await API[method](url, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      toast.success(editingProduct ? "Product updated" : "Product created");
 
       await get().fetchProducts(currentPage, searchTerm);
       get().resetProductForm();
-    } catch {
-      toast.error("Error saving product");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Error saving product");
     }
   },
 

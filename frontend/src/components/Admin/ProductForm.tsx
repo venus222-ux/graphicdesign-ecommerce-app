@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { useAdminStore } from "../../store/useAdminStore";
 import {
   FiUpload,
   FiX,
   FiFile,
   FiImage,
-  FiTrash2,
   FiFileText,
   FiAlignLeft,
   FiChevronDown,
@@ -24,27 +23,11 @@ const ProductForm: React.FC = () => {
     createOrUpdateProduct,
   } = useAdminStore();
 
-  // Single image preview
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-  // Drag & drop refs and states
-  const imageDropRef = useRef<HTMLDivElement>(null);
   const assetDropRef = useRef<HTMLDivElement>(null);
   const [imageDragActive, setImageDragActive] = useState(false);
   const [assetDragActive, setAssetDragActive] = useState(false);
-  const previewImages = productForm.preview_images ?? [];
 
-  useEffect(() => {
-    if (productForm.preview_image instanceof File) {
-      const url = URL.createObjectURL(productForm.preview_image);
-      setPreviewUrl(url);
-      return () => URL.revokeObjectURL(url);
-    } else if (editingProduct?.preview_url) {
-      setPreviewUrl(editingProduct.preview_url);
-    } else {
-      setPreviewUrl(null);
-    }
-  }, [productForm.preview_image, editingProduct?.preview_url]);
+  const previewImages = productForm.preview_images ?? [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,28 +39,42 @@ const ProductForm: React.FC = () => {
     resetProductForm();
   };
 
-  // Single preview image
-  const handleImageFile = useCallback(
-    (file: File | undefined) => {
-      if (file && file.type.startsWith("image/")) {
-        updateProductForm({ preview_image: file });
-      } else if (file) {
-        alert("Please upload an image file.");
+  // ================= MULTIPLE PREVIEW IMAGES =================
+  const handleMultipleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setImageDragActive(false);
+
+      const droppedFiles = Array.from(e.dataTransfer.files).filter((file) =>
+        file.type.startsWith("image/"),
+      );
+
+      if (droppedFiles.length > 0) {
+        updateProductForm({
+          preview_images: [
+            ...(productForm.preview_images || []),
+            ...droppedFiles,
+          ],
+        });
       }
     },
-    [updateProductForm],
+    [updateProductForm, productForm.preview_images],
   );
 
-  // Multiple images
-  const handleImageFiles = useCallback(
-    (file: File | undefined) => {
-      if (!file) return;
-      if (file.type.startsWith("image/")) {
+  const handleMultipleSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = Array.from(e.target.files || []).filter((file) =>
+        file.type.startsWith("image/"),
+      );
+
+      if (selectedFiles.length > 0) {
         updateProductForm({
-          preview_images: [...(productForm.preview_images || []), file],
+          preview_images: [
+            ...(productForm.preview_images || []),
+            ...selectedFiles,
+          ],
         });
-      } else {
-        alert("Please upload only image files.");
       }
     },
     [updateProductForm, productForm.preview_images],
@@ -91,7 +88,7 @@ const ProductForm: React.FC = () => {
     });
   };
 
-  // Asset file
+  // ================= ASSET FILE =================
   const handleAssetFile = useCallback(
     (file: File | undefined) => {
       if (file) updateProductForm({ asset_file: file });
@@ -99,6 +96,9 @@ const ProductForm: React.FC = () => {
     [updateProductForm],
   );
 
+  const removeAsset = () => updateProductForm({ asset_file: null });
+
+  // ================= DRAG & DROP HELPERS =================
   const handleDragOver = (
     e: React.DragEvent,
     setActive: React.Dispatch<React.SetStateAction<boolean>>,
@@ -116,21 +116,6 @@ const ProductForm: React.FC = () => {
     e.stopPropagation();
     setActive(false);
   };
-
-  const handleDrop = (
-    e: React.DragEvent,
-    setActive: React.Dispatch<React.SetStateAction<boolean>>,
-    onFile: (file: File) => void,
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setActive(false);
-    const files = e.dataTransfer.files;
-    if (files.length > 0) onFile(files[0]);
-  };
-
-  const removeImage = () => updateProductForm({ preview_image: null });
-  const removeAsset = () => updateProductForm({ asset_file: null });
 
   return (
     <div className={dashStyles.glassCard}>
@@ -269,49 +254,7 @@ const ProductForm: React.FC = () => {
           </div>
 
           <div className={productStyles.fileGrid}>
-            {/* Single Preview Image */}
-            <div className={productStyles.uploadBox}>
-              <label>Preview Image</label>
-              <div
-                ref={imageDropRef}
-                className={`${productStyles.dropzone} ${
-                  imageDragActive ? productStyles.dropzoneActive : ""
-                }`}
-                onDragOver={(e) => handleDragOver(e, setImageDragActive)}
-                onDragLeave={(e) => handleDragLeave(e, setImageDragActive)}
-                onDrop={(e) =>
-                  handleDrop(e, setImageDragActive, handleImageFile)
-                }
-              >
-                {previewUrl ? (
-                  <div className={productStyles.previewWithActions}>
-                    <img src={previewUrl} alt="Preview" />
-                    <button
-                      type="button"
-                      className={productStyles.removeBtn}
-                      onClick={removeImage}
-                      aria-label="Remove image"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </div>
-                ) : (
-                  <div className={productStyles.uploadPlaceholder}>
-                    <FiImage size={32} />
-                    <span>Drag & drop or click to upload</span>
-                    <small>PNG, JPG, GIF up to 5MB</small>
-                  </div>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageFile(e.target.files?.[0])}
-                  className={productStyles.fileInput}
-                />
-              </div>
-            </div>
-
-            {/* Multiple Preview Images */}
+            {/* Multiple Preview Images - FIXED */}
             <div className={productStyles.uploadBox}>
               <label>
                 Preview Images <small>(Multiple)</small>
@@ -322,11 +265,9 @@ const ProductForm: React.FC = () => {
                 }`}
                 onDragOver={(e) => handleDragOver(e, setImageDragActive)}
                 onDragLeave={(e) => handleDragLeave(e, setImageDragActive)}
-                onDrop={(e) =>
-                  handleDrop(e, setImageDragActive, handleImageFiles)
-                }
+                onDrop={handleMultipleDrop}
               >
-                {/* Existing */}
+                {/* Existing Images */}
                 {editingProduct?.preview_urls && (
                   <div
                     style={{
@@ -339,24 +280,24 @@ const ProductForm: React.FC = () => {
                     {(Array.isArray(editingProduct.preview_urls)
                       ? editingProduct.preview_urls
                       : [editingProduct.preview_urls]
-                    ) // transformăm string într-un array
-                      .map((url: string, i: number) => (
-                        <img
-                          key={i}
-                          src={url}
-                          alt={`Existing ${i}`}
-                          style={{
-                            width: "80px",
-                            height: "80px",
-                            objectFit: "cover",
-                            borderRadius: "8px",
-                          }}
-                        />
-                      ))}
+                    ).map((url: string, i: number) => (
+                      <img
+                        key={i}
+                        src={url}
+                        alt={`Existing ${i}`}
+                        style={{
+                          width: "80px",
+                          height: "80px",
+                          objectFit: "cover",
+                          borderRadius: "8px",
+                        }}
+                      />
+                    ))}
                   </div>
                 )}
-                {/* New */}
-                {(productForm.preview_images?.length ?? 0) > 0 && (
+
+                {/* New Uploaded Images */}
+                {previewImages.length > 0 && (
                   <div
                     style={{
                       display: "flex",
@@ -390,6 +331,7 @@ const ProductForm: React.FC = () => {
                             borderRadius: "50%",
                             width: "20px",
                             height: "20px",
+                            cursor: "pointer",
                           }}
                         >
                           ×
@@ -409,15 +351,7 @@ const ProductForm: React.FC = () => {
                   type="file"
                   accept="image/*"
                   multiple
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    updateProductForm({
-                      preview_images: [
-                        ...(productForm.preview_images || []),
-                        ...files.filter((f) => f.type.startsWith("image/")),
-                      ],
-                    });
-                  }}
+                  onChange={handleMultipleSelect}
                   className={productStyles.fileInput}
                 />
               </div>
@@ -433,9 +367,10 @@ const ProductForm: React.FC = () => {
                 }`}
                 onDragOver={(e) => handleDragOver(e, setAssetDragActive)}
                 onDragLeave={(e) => handleDragLeave(e, setAssetDragActive)}
-                onDrop={(e) =>
-                  handleDrop(e, setAssetDragActive, handleAssetFile)
-                }
+                onDrop={(e) => {
+                  const file = e.dataTransfer.files[0];
+                  handleAssetFile(file);
+                }}
               >
                 {productForm.asset_file instanceof File ? (
                   <div className={productStyles.fileInfo}>
@@ -450,7 +385,6 @@ const ProductForm: React.FC = () => {
                       type="button"
                       className={productStyles.removeBtn}
                       onClick={removeAsset}
-                      aria-label="Remove file"
                     >
                       <FiX />
                     </button>
@@ -470,6 +404,7 @@ const ProductForm: React.FC = () => {
                     <small>ZIP, PDF, EXE, etc. (max 100MB)</small>
                   </div>
                 )}
+
                 <input
                   type="file"
                   onChange={(e) => handleAssetFile(e.target.files?.[0])}

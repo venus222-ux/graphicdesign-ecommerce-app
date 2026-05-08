@@ -37,17 +37,19 @@ class Product extends Model implements HasMedia
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function registerMediaCollections(): void
-    {
-        $this->addMediaCollection('previews')
-            ->useDisk('public')
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
-            ->singleFile(false);
+public function registerMediaCollections(): void
+{
+    $this->addMediaCollection('previews')
+        ->useDisk('public')
+        ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/gif'])
+        ->singleFile(false)           // ← Very important
+        ->onlyKeepLatest(999);       // null = keep all files
 
-        $this->addMediaCollection('asset')
-            ->useDisk('public')
-            ->singleFile(true);
-    }
+    $this->addMediaCollection('asset')
+        ->useDisk('public')
+        ->singleFile(true);
+}
+
 
     public function users()
     {

@@ -49,23 +49,19 @@ public function store(
 
         $product = Product::create($data);
 
-        // ✅ CLEAN CALL
-        $mediaService->syncPreviewImages(
-            $product,
-            $request->file('preview_images')
-        );
+        // Save multiple images
+        $mediaService->syncPreviewImages($product);   // no true here
 
         if ($request->hasFile('asset_file')) {
-            $product
-                ->addMedia($request->file('asset_file'))
-                ->toMediaCollection('asset');
+            $product->addMedia($request->file('asset_file'))
+                    ->toMediaCollection('asset');
         }
+
+        $product->load('media');
 
         return response()->json([
             'message' => 'Product created',
-            'data' => new ProductResource(
-                $product->fresh()->load(['category', 'media'])
-            )
+            'data' => new ProductResource($product)
         ], 201);
 
     } catch (\Throwable $e) {
@@ -75,12 +71,15 @@ public function store(
         ], 500);
     }
 }
+
+
+
 public function update(
     UpdateProductRequest $request,
     Product $product,
     ProductSearchService $searchService,
     ProductMediaService $mediaService
-) {
+  ) {
     try {
         $data = $request->validated();
 
@@ -95,11 +94,7 @@ public function update(
         $product->update($data);
 
         // 🔥 REPLACE images clean
-        $mediaService->syncPreviewImages(
-            $product,
-            $request->file('preview_images'),
-            true
-        );
+     $mediaService->syncPreviewImages($product, true);
 
         if ($request->hasFile('asset_file')) {
             $product->clearMediaCollection('asset');
@@ -121,7 +116,7 @@ public function update(
                 $request->userAgent()
             );
         }
-
+       $product->load('media');
         $searchService->index($product);
 
         return response()->json(
@@ -138,11 +133,9 @@ public function update(
 }
 
 
-
-
-   /**
-     * Delete a product
-     */
+/**
+ * Delete a product
+ */
  public function destroy(Product $product, ProductSearchService $searchService)
 {
     $id = $product->id;
