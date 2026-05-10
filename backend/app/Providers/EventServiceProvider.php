@@ -14,22 +14,39 @@ use App\Listeners\SendResetPasswordNotification;
 use App\Listeners\SendWelcomeEmail;
 use App\Listeners\LogUserLogin;
 use App\Listeners\LogUploadToMongo;
+use App\Events\OrderPaid;
+use App\Listeners\SendOrderConfirmationEmail;
 
 class EventServiceProvider extends ServiceProvider
 {
     protected $listen = [
-        FileUploaded::class   => [LogUploadToMongo::class],
-        UserRegistered::class => [SendWelcomeEmail::class],
-        UserLoggedIn::class   => [LogUserLogin::class],
+
+        // Existing Events
+        FileUploaded::class => [
+            LogUploadToMongo::class,
+        ],
+
+        UserRegistered::class => [
+            SendWelcomeEmail::class,
+        ],
+
+        UserLoggedIn::class => [
+            LogUserLogin::class,
+        ],
+
+        // New Order Paid Event
+        OrderPaid::class => [
+            SendOrderConfirmationEmail::class,
+        ],
+
         // PasswordResetRequested is handled manually below
     ];
+
 
     public function boot(): void
     {
         parent::boot();
 
-        // === CRITICAL: Disable discovery completely ===
-        static::disableEventDiscovery();
 
         // Remove any existing registrations for this event
         Event::forget(PasswordResetRequested::class);

@@ -3,58 +3,136 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #f9fafb;
-  padding: 20px;
+  background-color: #f3f4f6;
+  padding: 1.5rem;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .card {
   background: white;
-  padding: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  padding: 3rem 2rem;
+  border-radius: 24px;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   text-align: center;
-  max-width: 400px;
+  max-width: 480px;
   width: 100%;
 }
 
-.iconWrapper {
-  font-size: 3rem;
+/* Icons & States */
+.iconSuccess {
+  color: #10b981;
+  margin-bottom: 1.5rem;
+  animation: scaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.errorIcon {
+  color: #ef4444;
+  margin-bottom: 1.5rem;
+}
+.spinner {
+  animation: rotate 2s linear infinite;
+  color: #6366f1;
   margin-bottom: 1rem;
-  animation: pop 0.5s ease-out;
 }
 
 .title {
   color: #111827;
-  margin-bottom: 0.5rem;
+  font-size: 1.875rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
 }
-
 .message {
-  color: #6b7280;
+  color: #4b5563;
+  line-height: 1.5;
   margin-bottom: 2rem;
 }
 
-.button {
-  background-color: #2563eb;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  text-decoration: none;
+/* Order Summary Box */
+.orderSummary {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.orderId {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.itemRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Buttons */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.primaryBtn,
+.secondaryBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  border-radius: 10px;
   font-weight: 600;
-  display: inline-block;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  cursor: pointer;
+  text-decoration: none;
 }
 
-.button:hover {
-  background-color: #1d4ed8;
+.primaryBtn {
+  background: #111827;
+  color: white;
+  border: none;
+}
+.primaryBtn:hover {
+  background: #1f2937;
+  transform: translateY(-1px);
 }
 
-@keyframes pop {
-  0% {
-    transform: scale(0.5);
+.miniDownload {
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Animations */
+@keyframes scaleUp {
+  from {
+    transform: scale(0.8);
     opacity: 0;
   }
-  100% {
+  to {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
