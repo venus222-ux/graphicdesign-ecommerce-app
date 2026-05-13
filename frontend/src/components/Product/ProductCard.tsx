@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import styles from "../../styles/ProductCard.module.css";
 import { Product } from "../../types";
+import WishlistButton from "./WishlistButton";
 
 interface ProductCardProps {
   product: Product;
@@ -42,6 +43,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <Link to={`/products/${product.slug}`} className={styles.detailsLink}>
           Details →
         </Link>
+        <WishlistButton product={product} />
       </div>
     </div>
   );

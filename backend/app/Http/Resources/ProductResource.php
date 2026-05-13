@@ -32,6 +32,13 @@ class ProductResource extends JsonResource
                 'url'   => $media->getFullUrl(),
                 'name'  => $media->file_name,
             ]),
-        ];
+            'is_wishlisted' => auth()->check()
+              ? auth()->user()
+                ->wishlistProducts()
+                ->where('product_id', $this->id)
+                ->exists()
+             : false,
+            ];
+
     }
 }

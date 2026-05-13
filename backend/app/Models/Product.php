@@ -55,4 +55,12 @@ public function registerMediaCollections(): void
     {
        return $this->belongsToMany(User::class);
     }
+
+    public function wishedByUsers()
+{
+    return $this->belongsToMany(
+        User::class,
+        'wishlists'
+    )->withTimestamps();
+}
 }

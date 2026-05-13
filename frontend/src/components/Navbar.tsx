@@ -3,31 +3,39 @@ import { useStore } from "../store/useStore";
 import { logoutRequest } from "../api";
 import styles from "../styles/Navbar.module.css";
 import { useEffect, useState, useRef } from "react";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Heart } from "lucide-react";
 import { useCartStore } from "../store/useCartStore";
+import { useWishlistStore } from "../store/useWishlistStore";
 
 export default function Navbar() {
   const { isAuth, initialized, logout, theme, toggleTheme, role } = useStore();
   const navigate = useNavigate();
+
   const [categories, setCategories] = useState<
     { name: string; slug: string }[]
   >([]);
+
   const [open, setOpen] = useState(false);
 
   const totalItems = useCartStore((s) =>
     s.items.reduce((acc, i) => acc + i.quantity, 0),
   );
 
-  // For shake animation when item is added
+  const wishlistCount = useWishlistStore((s) => s.items.length);
+
+  // Cart shake animation
   const [justAdded, setJustAdded] = useState(false);
   const prevTotalRef = useRef(totalItems);
 
   useEffect(() => {
     if (totalItems > prevTotalRef.current) {
       setJustAdded(true);
+
       const timer = setTimeout(() => setJustAdded(false), 400);
+
       return () => clearTimeout(timer);
     }
+
     prevTotalRef.current = totalItems;
   }, [totalItems]);
 
@@ -48,7 +56,7 @@ export default function Navbar() {
     }
   };
 
-  // 🛒 Enhanced Cart Button component with modern UI & animation
+  // 🛒 Cart Button
   const CartButton = () => (
     <Link
       to="/cart"
@@ -57,9 +65,28 @@ export default function Navbar() {
       aria-label={`Shopping cart with ${totalItems} items`}
     >
       <ShoppingCart size={22} className={styles.cartIcon} />
+
       {totalItems > 0 && (
         <span key={totalItems} className={styles.cartBadge}>
           {totalItems > 99 ? "99+" : totalItems}
+        </span>
+      )}
+    </Link>
+  );
+
+  // ❤️ Wishlist Button
+  const WishlistButton = () => (
+    <Link
+      to="/wishlist"
+      className={styles.cartContainer}
+      title="Wishlist"
+      aria-label={`Wishlist with ${wishlistCount} items`}
+    >
+      <Heart size={22} className={styles.cartIcon} />
+
+      {wishlistCount > 0 && (
+        <span className={styles.cartBadge}>
+          {wishlistCount > 99 ? "99+" : wishlistCount}
         </span>
       )}
     </Link>
@@ -94,6 +121,7 @@ export default function Navbar() {
             onMouseLeave={() => setOpen(false)}
           >
             <span className={styles.link}>Shop ▾</span>
+
             {open && (
               <div className={styles.dropdownMenu}>
                 <Link
@@ -103,7 +131,9 @@ export default function Navbar() {
                 >
                   All Products
                 </Link>
+
                 <hr />
+
                 {categories.map((cat) => (
                   <Link
                     key={cat.slug}
@@ -128,6 +158,7 @@ export default function Navbar() {
               >
                 Dashboard
               </NavLink>
+
               {role === "admin" && (
                 <NavLink
                   to="/admin/dashboard"
@@ -138,6 +169,7 @@ export default function Navbar() {
                   Admin
                 </NavLink>
               )}
+
               <NavLink
                 to="/profile"
                 className={({ isActive }) =>
@@ -146,6 +178,8 @@ export default function Navbar() {
               >
                 Profile
               </NavLink>
+
+              <WishlistButton />
               <CartButton />
             </>
           ) : (
@@ -158,6 +192,7 @@ export default function Navbar() {
               >
                 Login
               </NavLink>
+
               <NavLink
                 to="/register"
                 className={({ isActive }) =>
@@ -166,6 +201,8 @@ export default function Navbar() {
               >
                 Register
               </NavLink>
+
+              <WishlistButton />
               <CartButton />
             </>
           )}
@@ -179,6 +216,7 @@ export default function Navbar() {
           >
             {theme === "light" ? "🌙" : "☀️"}
           </button>
+
           {isAuth && (
             <button className={styles.logoutBtn} onClick={handleLogout}>
               Logout

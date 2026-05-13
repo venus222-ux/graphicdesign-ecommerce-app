@@ -14,6 +14,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Product\PublicProductController;
 use App\Http\Controllers\Product\CategoryController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -101,3 +102,8 @@ Route::prefix('cart')->group(function () {
     Route::delete('/', [CartController::class, 'clear']);
 });
 
+Route::prefix('wishlist')->group(function () {
+    Route::get('/', [WishlistController::class, 'index']);
+    Route::post('/toggle', [WishlistController::class, 'toggle']);
+    Route::delete('/{productId}', [WishlistController::class, 'remove']);
+});

@@ -126,6 +126,7 @@ export interface Product {
   preview_urls?: string[] | string | null; // ✅ aici am schimbat
   asset_url?: string;
   slug: string;
+  is_wishlisted?: boolean;
 }
 
 /* ================= PRODUCT FORM ================= */

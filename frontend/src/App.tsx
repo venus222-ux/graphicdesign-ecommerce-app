@@ -21,6 +21,7 @@ const Shop = lazy(() => import("./pages/Shop"));
 const ProductDetails = lazy(() => import("./pages/ProductDetails"));
 const Cart = lazy(() => import("./pages/Cart"));
 const Checkout = lazy(() => import("./pages/Checkout"));
+const Wishlist = lazy(() => import("./pages/Wishlist"));
 
 const AuthBootstrap = () => {
   useAuthRestore();
@@ -65,6 +66,7 @@ const App = () => {
               <Route path="/" element={<Home />} />
               <Route path="/shop" element={<Shop />} />
               <Route path="/cart" element={<Cart />} />
+              <Route path="/wishlist" element={<Wishlist />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/products/:slug" element={<ProductDetails />} />
               <Route path="/category/:slug" element={<CategoryPage />} />
