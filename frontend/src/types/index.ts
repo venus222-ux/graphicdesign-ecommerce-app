@@ -40,14 +40,54 @@ export interface LoginResponse {
 }
 
 export interface ProfileData {
+  id?: number;
   name?: string;
   email: string;
   created_at?: string;
+
+  company_name?: string;
+  vat_number?: string;
+
+  address_line_1?: string;
+  address_line_2?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
 }
+
+export interface BillingAddress {
+  company_name?: string;
+  vat_number?: string;
+  address_line_1: string;
+  address_line_2?: string;
+  city: string;
+  state?: string;
+  postal_code: string;
+  country: string;
+}
+
+export interface CheckoutRequest {
+  items: any[];
+  billing?: BillingAddress;
+}
+
 export interface FormData {
   email: string;
   password: string;
   password_confirmation: string;
+  name?: string;
+
+  company_name?: string;
+  vat_number?: string;
+
+  address_line_1?: string;
+  address_line_2?: string;
+
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
 }
 
 export interface ProfileUpdateRequest {

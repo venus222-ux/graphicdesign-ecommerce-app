@@ -24,6 +24,17 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'email',
         'password',
+
+        'company_name',
+        'vat_number',
+
+        'address_line_1',
+        'address_line_2',
+
+        'city',
+        'state',
+        'postal_code',
+        'country',
     ];
 
     /**
@@ -59,7 +70,7 @@ class User extends Authenticatable implements JWTSubject
     }
 
 
-   
+
     public function orders()
 {
     return $this->hasMany(Order::class);

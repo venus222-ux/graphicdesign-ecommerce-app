@@ -26,98 +26,109 @@ public function checkout(Request $request, StripeService $stripe)
     $cart = $request->input('items', []);
 
     if (empty($cart)) {
-        return response()->json([
-            'message' => 'Cart is empty'
-        ], 400);
+        return response()->json(['message' => 'Cart is empty'], 400);
     }
+
+    $user = auth()->user();
+
+    $validated = $request->validate([
+        'billing.company_name'      => 'nullable|string|max:255',
+        'billing.vat_number'        => 'nullable|string|max:50',
+        'billing.address_line_1'    => 'required|string|max:255',
+        'billing.address_line_2'    => 'nullable|string|max:255',
+        'billing.city'              => 'required|string|max:100',
+        'billing.state'             => 'nullable|string|max:100',
+        'billing.postal_code'       => 'required|string|max:20',
+        'billing.country'           => 'required|string|size:2',
+        'save_to_profile'           => 'boolean|nullable',
+    ]);
+
+    $billing = $validated['billing'];
+    $saveToProfile = $validated['save_to_profile'] ?? false;
 
     DB::beginTransaction();
 
     try {
         $subtotal = 0;
 
-        // CREATE ORDER
+        // Calculate subtotal first
+        foreach ($cart as $item) {
+            $product = Product::findOrFail($item['id']);
+            $quantity = (int) $item['quantity'];
+            $price = (float) $product->price;
+            $subtotal += $price * $quantity;
+        }
+
+        $vat = round(($subtotal * 21) / 100, 2);
+        $total = $subtotal + $vat;
+
+        // Create Order with all fields
         $order = Order::create([
-            'user_id' => auth()->id(),
-            'subtotal' => 0,
-            'vat_percent' => 21,
-            'vat' => 0,
-            'total' => 0,
-            'status' => 'pending',
+            'user_id'           => $user->id,
+            'status'            => 'pending',
+
+            'subtotal'          => round($subtotal, 2),
+            'vat_percent'       => 21,
+            'vat'               => $vat,
+            'total'             => $total,
+
+            'billing_name'      => $user->name ?? 'Customer',
+            'billing_email'     => $user->email,
+
+            'billing_company'     => $billing['company_name'] ?? $user->company_name,
+            'billing_vat_number'  => $billing['vat_number'] ?? $user->vat_number,
+
+            'billing_address_1'   => $billing['address_line_1'],
+            'billing_address_2'   => $billing['address_line_2'] ?? null,
+
+            'billing_city'        => $billing['city'],
+            'billing_state'       => $billing['state'] ?? null,
+            'billing_postal_code' => $billing['postal_code'],
+            'billing_country'     => $billing['country'],
         ]);
 
-        // CREATE ORDER ITEMS
+        // Create Order Items
         foreach ($cart as $item) {
-
             $product = Product::findOrFail($item['id']);
 
-            if (!$product->is_published) {
-                throw new \Exception('Product unavailable');
-            }
-
-            $quantity = (int) $item['quantity'];
-
-            $price = (float) $product->price;
-
-            $lineTotal = $price * $quantity;
-
-            $subtotal += $lineTotal;
-
             OrderItem::create([
-                'order_id' => $order->id,
+                'order_id'   => $order->id,
                 'product_id' => $product->id,
-                'quantity' => $quantity,
-                'price' => $price, // snapshot price
+                'quantity'   => (int) $item['quantity'],
+                'price'      => (float) $product->price,
             ]);
         }
 
-        // VAT CALCULATION
-        $vatPercent = 21;
+        // Auto-save billing to profile
+        if ($saveToProfile) {
+            $user->update([
+                'company_name'   => $billing['company_name'],
+                'vat_number'     => $billing['vat_number'],
+                'address_line_1' => $billing['address_line_1'],
+                'address_line_2' => $billing['address_line_2'] ?? null,
+                'city'           => $billing['city'],
+                'state'          => $billing['state'] ?? null,
+                'postal_code'    => $billing['postal_code'],
+                'country'        => $billing['country'],
+            ]);
+        }
 
-        $vat = ($subtotal * $vatPercent) / 100;
+        $order->load(['items.product', 'user']);
 
-        $grandTotal = $subtotal + $vat;
-
-        // UPDATE ORDER TOTALS
-        $order->update([
-            'subtotal' => round($subtotal, 2),
-            'vat_percent' => $vatPercent,
-            'vat' => round($vat, 2),
-            'total' => round($grandTotal, 2),
-        ]);
-
-        // LOAD RELATIONS
-        $order->load([
-            'items.product',
-            'user'
-        ]);
-
-        // CREATE STRIPE SESSION
         $session = $stripe->createCheckoutSession($order);
-
-        // SAVE STRIPE SESSION ID
-        $order->update([
-            'stripe_session_id' => $session->id,
-        ]);
+        $order->update(['stripe_session_id' => $session->id]);
 
         DB::commit();
 
-        return response()->json([
-            'url' => $session->url
-        ]);
+        return response()->json(['url' => $session->url]);
 
     } catch (\Throwable $e) {
-
         DB::rollBack();
-
-        Log::error('Checkout failed', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
+        Log::error('Checkout failed', ['error' => $e->getMessage()]);
 
         return response()->json([
             'message' => 'Checkout failed',
-            'error' => $e->getMessage(),
+            'error'   => $e->getMessage()
         ], 500);
     }
 }

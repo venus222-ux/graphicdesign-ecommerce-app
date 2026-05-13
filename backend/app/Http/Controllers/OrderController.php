@@ -47,7 +47,7 @@ class OrderController extends Controller
         }
 
         // Generate PDF
-        $pdf = Pdf::loadView('emails.invoice', compact('order'))
+        $pdf = Pdf::loadView('invoices.eu-invoice', compact('order'))
                   ->setPaper('a4', 'portrait');
 
         $order
@@ -64,7 +64,7 @@ class OrderController extends Controller
     // Helper method (in case you want to reuse it later)
     private function generateInvoicePdf($order)
     {
-        return Pdf::loadView('emails.invoice', compact('order'))
+        return Pdf::loadView('invoices.eu-invoice', compact('order'))
                   ->setPaper('a4', 'portrait');
     }
 
@@ -85,7 +85,7 @@ class OrderController extends Controller
         );
     }
 
-    $pdf = Pdf::loadView('emails.invoice', compact('order'))
+    $pdf = Pdf::loadView('invoices.eu-invoice', compact('order'))
         ->setPaper('a4', 'portrait');
 
     $order

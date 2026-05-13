@@ -12,15 +12,27 @@ class Order extends Model implements HasMedia
 use InteractsWithMedia;
 
 
-   protected $fillable = [
-      'user_id',
-      'total',
-      'status',
-      'stripe_session_id',
-      'payment_intent_id',   // ← must be here
-      'vat',
-      'refunded_total',
-   ];
+protected $fillable = [
+    'user_id',
+    'subtotal',
+    'vat_percent',
+    'vat',
+    'total',
+    'status',
+    'stripe_session_id',
+    'payment_intent_id',
+    'refunded_total',
+    'billing_name',
+    'billing_email',
+    'billing_company',
+    'billing_vat_number',
+    'billing_address_1',
+    'billing_address_2',
+    'billing_city',
+    'billing_state',
+    'billing_postal_code',
+    'billing_country',
+];
     protected static function boot()
 {
     parent::boot();

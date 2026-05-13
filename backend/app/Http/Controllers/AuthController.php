@@ -207,19 +207,38 @@ class AuthController extends Controller
     return new UserResource($user);
 }
 
-    public function updateProfile(UpdateProfileRequest $request)
-    {
-        $user = JWTAuth::parseToken()->authenticate();
+public function updateProfile(UpdateProfileRequest $request)
+{
+    $user = JWTAuth::parseToken()->authenticate();
 
-        $user->update([
-            'email' => $request->email,
-            'password' => $request->password
-                ? bcrypt($request->password)
-                : $user->password,
-        ]);
+    $data = $request->only([
+        'name',
+        'email',
 
-        return response()->json(['message' => 'Profile updated']);
+        'company_name',
+        'vat_number',
+
+        'address_line_1',
+        'address_line_2',
+
+        'city',
+        'state',
+        'postal_code',
+        'country',
+    ]);
+
+    // password optional
+    if ($request->filled('password')) {
+        $data['password'] = bcrypt($request->password);
     }
+
+    $user->update($data);
+
+    return response()->json([
+        'message' => 'Profile updated',
+        'user' => $user->fresh(),
+    ]);
+}
 
     public function destroyProfile()
     {
