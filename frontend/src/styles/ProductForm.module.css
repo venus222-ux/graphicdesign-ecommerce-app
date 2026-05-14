@@ -367,13 +367,8 @@
   font-size: 0.7rem;
   color: #334155;
 }
-
 .fileInput {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-  z-index: 2;
+  display: none;
 }
 
 .submitBtn {

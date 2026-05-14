@@ -45,7 +45,8 @@ class ProductResource extends JsonResource
                 ->values()
                 ->toArray(),
 
-            'asset' => $asset ? [
+             'asset' => $asset ? [
+                'id' => $asset->id,
                 'url' => $asset->getFullUrl(),
                 'file_name' => $asset->file_name,
                 'size' => $asset->size,

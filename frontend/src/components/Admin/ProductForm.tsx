@@ -29,6 +29,9 @@ const ProductForm: React.FC = () => {
   const [imageDragActive, setImageDragActive] = useState(false);
   const [assetDragActive, setAssetDragActive] = useState(false);
   const [deletingImageId, setDeletingImageId] = useState<number | null>(null);
+  const previewInputRef = useRef<HTMLInputElement>(null);
+
+  const assetInputRef = useRef<HTMLInputElement>(null);
 
   const previewImages = productForm.preview_images ?? [];
 
@@ -274,6 +277,7 @@ const ProductForm: React.FC = () => {
               </label>
               <div
                 className={`${productStyles.dropzone} ${imageDragActive ? productStyles.dropzoneActive : ""}`}
+                onClick={() => previewInputRef.current?.click()}
                 onDragOver={(e) => handleDragOver(e, setImageDragActive)}
                 onDragLeave={(e) => handleDragLeave(e, setImageDragActive)}
                 onDrop={handleMultipleDrop}
@@ -313,7 +317,12 @@ const ProductForm: React.FC = () => {
                             />
                             <button
                               type="button"
-                              onClick={() => handleDeleteExistingImage(img.id)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+
+                                handleDeleteExistingImage(img.id);
+                              }}
                               disabled={deletingImageId === img.id}
                               style={{
                                 position: "absolute",
@@ -374,7 +383,11 @@ const ProductForm: React.FC = () => {
                           />
                           <button
                             type="button"
-                            onClick={() => removeNewImage(i)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              removeNewImage(i);
+                            }}
                             style={{
                               position: "absolute",
                               top: -6,
@@ -403,6 +416,7 @@ const ProductForm: React.FC = () => {
                 </div>
 
                 <input
+                  ref={previewInputRef}
                   type="file"
                   accept="image/*"
                   multiple
@@ -415,21 +429,26 @@ const ProductForm: React.FC = () => {
             {/* ASSET FILE */}
             <div className={productStyles.uploadBox}>
               <label>Asset File (ZIP, etc.)</label>
+
               <div
                 ref={assetDropRef}
                 className={`${productStyles.dropzone} ${assetDragActive ? productStyles.dropzoneActive : ""}`}
+                onClick={() => assetInputRef.current?.click()}
                 onDragOver={(e) => handleDragOver(e, setAssetDragActive)}
                 onDragLeave={(e) => handleDragLeave(e, setAssetDragActive)}
                 onDrop={(e) => handleAssetFile(e.dataTransfer.files[0])}
               >
+                {/* NEW FILE */}
                 {productForm.asset_file instanceof File ? (
                   <div className={productStyles.fileInfo}>
                     <FiFile size={28} />
+
                     <div>
                       <strong>New File:</strong>
                       <br />
                       {productForm.asset_file.name}
                       <br />
+
                       <small>
                         {(productForm.asset_file.size / (1024 * 1024)).toFixed(
                           2,
@@ -437,6 +456,7 @@ const ProductForm: React.FC = () => {
                         MB
                       </small>
                     </div>
+
                     <button
                       type="button"
                       onClick={removeAsset}
@@ -446,22 +466,65 @@ const ProductForm: React.FC = () => {
                     </button>
                   </div>
                 ) : editingProduct?.asset ? (
+                  /* EXISTING FILE */
                   <div className={productStyles.fileInfo}>
                     <FiFile size={28} />
+
                     <div>
                       <strong>Current Asset:</strong>
                       <br />
                       {editingProduct.asset.file_name}
                     </div>
-                    <a
-                      href={editingProduct.asset.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "10px",
+                        alignItems: "center",
+                      }}
                     >
-                      ↓ Download
-                    </a>
+                      <a
+                        href={editingProduct.asset.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        ↓ Download
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+
+                          if (!editingProduct?.id || !editingProduct?.asset)
+                            return;
+
+                          if (!window.confirm("Delete asset file?")) return;
+
+                          await deletePreviewImage(
+                            editingProduct.id,
+                            editingProduct.asset.id,
+                          );
+                        }}
+                        style={{
+                          background: "#ef4444",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          padding: "6px 10px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 ) : (
+                  /* EMPTY */
                   <div className={productStyles.uploadPlaceholder}>
                     <FiUpload size={32} />
                     <span>Drag & drop asset file here</span>
@@ -470,6 +533,7 @@ const ProductForm: React.FC = () => {
                 )}
 
                 <input
+                  ref={assetInputRef}
                   type="file"
                   onChange={(e) => handleAssetFile(e.target.files?.[0])}
                   className={productStyles.fileInput}

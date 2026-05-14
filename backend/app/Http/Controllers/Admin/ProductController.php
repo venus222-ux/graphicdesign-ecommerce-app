@@ -83,49 +83,51 @@ public function index(Request $request)
 
     /* ================= DELETE SINGLE PREVIEW IMAGE ================= */
 
-    public function deleteMedia(Product $product, $mediaId)
-    {
-        try {
-            $media = $product->media()
-                ->where('id', $mediaId)
-                ->first();
+/* ================= DELETE MEDIA ================= */
 
-            if (!$media) {
-                return response()->json([
-                    'message' => 'Media not found',
-                ], 404);
-            }
+public function deleteMedia(Product $product, $mediaId)
+{
+    try {
+        $media = $product->media()
+            ->where('id', $mediaId)
+            ->first();
 
-            if ($media->collection_name !== 'previews') {
-                return response()->json([
-                    'message' => 'Cannot delete this file',
-                ], 403);
-            }
-
-            $media->delete();
-
-            $product->load('media');
-
+        if (!$media) {
             return response()->json([
-                'message' => 'Image deleted successfully',
-                'data' => new ProductResource($product),
-            ]);
-        } catch (Throwable $e) {
-            Log::error('Failed to delete media', [
-                'product_id' => $product->id,
-                'media_id' => $mediaId,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'message' => 'Failed to delete image',
-                'error' => config('app.debug')
-                    ? $e->getMessage()
-                    : null,
-            ], 500);
+                'message' => 'Media not found',
+            ], 404);
         }
-    }
 
+        // allow previews + asset
+        if (!in_array($media->collection_name, ['previews', 'asset'])) {
+            return response()->json([
+                'message' => 'Cannot delete this file',
+            ], 403);
+        }
+
+        $media->delete();
+
+        $product->load(['category', 'media']);
+
+        return response()->json([
+            'message' => 'File deleted successfully',
+            'data' => new ProductResource($product),
+        ]);
+    } catch (Throwable $e) {
+        Log::error('Failed to delete media', [
+            'product_id' => $product->id,
+            'media_id' => $mediaId,
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'message' => 'Failed to delete file',
+            'error' => config('app.debug')
+                ? $e->getMessage()
+                : null,
+        ], 500);
+    }
+}
     /* ================= UPDATE ================= */
 
     public function update(
