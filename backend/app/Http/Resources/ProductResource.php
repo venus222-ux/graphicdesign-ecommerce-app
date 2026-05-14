@@ -8,37 +8,52 @@ class ProductResource extends JsonResource
 {
     public function toArray($request)
     {
-        // Force fresh load of media
-        $this->load('media');
+        $media = $this->media ?? collect();
 
-        $previews = $this->getMedia('previews')
-                         ->sortBy('order_column');
+        $previews = $media
+            ->where('collection_name', 'previews')
+            ->sortBy('order_column');
+
+        $asset = $media
+            ->firstWhere('collection_name', 'asset');
 
         return [
-            'id'                => $this->id,
-            'slug'              => $this->slug,
-            'title'             => $this->title,
-            'price'             => $this->price,
+            'id' => $this->id,
+            'slug' => $this->slug,
+            'title' => $this->title,
+            'price' => $this->price,
+            'category_id' => $this->category_id,
             'short_description' => $this->short_description,
-            'description'       => $this->description,
-            'asset_type'        => $this->asset_type ?? 'Premium',
-            'category'          => $this->category?->only(['id', 'name']),
+            'description' => $this->description,
+            'asset_type' => $this->asset_type ?? 'Premium',
+            'is_published' => (bool) $this->is_published,
 
-            'preview_url'  => $previews->first()?->getFullUrl() ?? null,
-            'preview_urls' => $previews->map(fn($media) => $media->getFullUrl())->values()->toArray(),
+            'category' => $this->category?->only(['id', 'name']),
 
-            'previews' => $previews->map(fn($media) => [
-                'id'    => $media->id,
-                'url'   => $media->getFullUrl(),
-                'name'  => $media->file_name,
-            ]),
-            'is_wishlisted' => auth()->check()
-              ? auth()->user()
-                ->wishlistProducts()
-                ->where('product_id', $this->id)
-                ->exists()
-             : false,
-            ];
+            'preview_urls' => $previews
+                ->map(fn ($m) => $m->getFullUrl())
+                ->values()
+                ->toArray(),
 
+            'previews' => $previews
+                ->map(fn ($m) => [
+                    'id' => $m->id,
+                    'url' => $m->getFullUrl(),
+                    'name' => $m->file_name,
+                    'size' => $m->size,
+                ])
+                ->values()
+                ->toArray(),
+
+            'asset' => $asset ? [
+                'url' => $asset->getFullUrl(),
+                'file_name' => $asset->file_name,
+                'size' => $asset->size,
+                'mime_type' => $asset->mime_type,
+            ] : null,
+
+            // set by controller (no query in resource)
+            'is_wishlisted' => $this->is_wishlisted ?? false,
+        ];
     }
 }

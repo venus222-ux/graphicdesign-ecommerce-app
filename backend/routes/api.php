@@ -71,6 +71,9 @@ Route::prefix('admin')->middleware(['jwt.auth', 'role:admin'])->group(function (
     Route::post('/products', [ProductController::class, 'store']);
     Route::put('/products/{product}', [ProductController::class, 'update']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+    Route::delete('/products/{product}/media/{media}', [ProductController::class, 'deleteMedia'])
+     ->name('admin.products.media.delete');
+     Route::get('/products/{product}', [ProductController::class, 'show']);
 
     Route::get('/logs', [AdminController::class, 'logs']);
     Route::delete('/logs/{id}', [AdminController::class, 'deleteLog']);

@@ -8,6 +8,7 @@ import {
   FiFileText,
   FiAlignLeft,
   FiChevronDown,
+  FiTrash2,
 } from "react-icons/fi";
 import dashStyles from "../../styles/AdminDashboard.module.css";
 import productStyles from "../../styles/ProductForm.module.css";
@@ -21,11 +22,13 @@ const ProductForm: React.FC = () => {
     setEditingProduct,
     resetProductForm,
     createOrUpdateProduct,
+    deletePreviewImage,
   } = useAdminStore();
 
   const assetDropRef = useRef<HTMLDivElement>(null);
   const [imageDragActive, setImageDragActive] = useState(false);
   const [assetDragActive, setAssetDragActive] = useState(false);
+  const [deletingImageId, setDeletingImageId] = useState<number | null>(null);
 
   const previewImages = productForm.preview_images ?? [];
 
@@ -37,6 +40,16 @@ const ProductForm: React.FC = () => {
   const handleCancel = () => {
     setEditingProduct(null);
     resetProductForm();
+  };
+
+  // Delete Existing Preview Image
+  const handleDeleteExistingImage = async (mediaId: number) => {
+    if (!editingProduct?.id) return;
+    if (!window.confirm("Are you sure you want to delete this image?")) return;
+
+    setDeletingImageId(mediaId);
+    await deletePreviewImage(editingProduct.id, mediaId);
+    setDeletingImageId(null);
   };
 
   // ================= MULTIPLE PREVIEW IMAGES =================
@@ -98,7 +111,7 @@ const ProductForm: React.FC = () => {
 
   const removeAsset = () => updateProductForm({ asset_file: null });
 
-  // ================= DRAG & DROP HELPERS =================
+  // Drag & Drop Helpers
   const handleDragOver = (
     e: React.DragEvent,
     setActive: React.Dispatch<React.SetStateAction<boolean>>,
@@ -254,96 +267,138 @@ const ProductForm: React.FC = () => {
           </div>
 
           <div className={productStyles.fileGrid}>
-            {/* Multiple Preview Images - FIXED */}
+            {/* PREVIEW IMAGES */}
             <div className={productStyles.uploadBox}>
               <label>
-                Preview Images <small>(Multiple)</small>
+                Preview Images <small>(× to delete existing)</small>
               </label>
               <div
-                className={`${productStyles.dropzone} ${
-                  imageDragActive ? productStyles.dropzoneActive : ""
-                }`}
+                className={`${productStyles.dropzone} ${imageDragActive ? productStyles.dropzoneActive : ""}`}
                 onDragOver={(e) => handleDragOver(e, setImageDragActive)}
                 onDragLeave={(e) => handleDragLeave(e, setImageDragActive)}
                 onDrop={handleMultipleDrop}
               >
                 {/* Existing Images */}
-                {editingProduct?.preview_urls && (
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      flexWrap: "wrap",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    {(Array.isArray(editingProduct.preview_urls)
-                      ? editingProduct.preview_urls
-                      : [editingProduct.preview_urls]
-                    ).map((url: string, i: number) => (
-                      <img
-                        key={i}
-                        src={url}
-                        alt={`Existing ${i}`}
+                {editingProduct?.previews &&
+                  editingProduct.previews.length > 0 && (
+                    <div style={{ marginBottom: "16px" }}>
+                      <p>
+                        <strong>Current Images:</strong>
+                      </p>
+                      <div
                         style={{
-                          width: "80px",
-                          height: "80px",
-                          objectFit: "cover",
-                          borderRadius: "8px",
+                          display: "flex",
+                          gap: "12px",
+                          flexWrap: "wrap",
                         }}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {/* New Uploaded Images */}
-                {previewImages.length > 0 && (
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      flexWrap: "wrap",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    {previewImages.map((file, i) => (
-                      <div key={i} style={{ position: "relative" }}>
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt={`New ${i}`}
-                          style={{
-                            width: "80px",
-                            height: "80px",
-                            objectFit: "cover",
-                            borderRadius: "8px",
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeNewImage(i)}
-                          style={{
-                            position: "absolute",
-                            top: -6,
-                            right: -6,
-                            background: "red",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "50%",
-                            width: "20px",
-                            height: "20px",
-                            cursor: "pointer",
-                          }}
-                        >
-                          ×
-                        </button>
+                      >
+                        {editingProduct.previews.map((img: any) => (
+                          <div
+                            key={img.id}
+                            style={{
+                              position: "relative",
+                              textAlign: "center",
+                            }}
+                          >
+                            <img
+                              src={img.url}
+                              alt={img.name}
+                              style={{
+                                width: "90px",
+                                height: "90px",
+                                objectFit: "cover",
+                                borderRadius: "8px",
+                                border: "2px solid #4ade80",
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteExistingImage(img.id)}
+                              disabled={deletingImageId === img.id}
+                              style={{
+                                position: "absolute",
+                                top: -8,
+                                right: -8,
+                                background:
+                                  deletingImageId === img.id
+                                    ? "#666"
+                                    : "#ef4444",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "50%",
+                                width: "26px",
+                                height: "26px",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              {deletingImageId === img.id ? (
+                                "⏳"
+                              ) : (
+                                <FiTrash2 size={14} />
+                              )}
+                            </button>
+                            <small
+                              style={{ display: "block", marginTop: "4px" }}
+                            >
+                              {img.name}
+                            </small>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
+                  )}
+
+                {/* New Images */}
+                {previewImages.length > 0 && (
+                  <div style={{ marginBottom: "16px" }}>
+                    <p>
+                      <strong>New Images to Upload:</strong>
+                    </p>
+                    <div
+                      style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}
+                    >
+                      {previewImages.map((file, i) => (
+                        <div key={i} style={{ position: "relative" }}>
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`New ${i}`}
+                            style={{
+                              width: "80px",
+                              height: "80px",
+                              objectFit: "cover",
+                              borderRadius: "8px",
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeNewImage(i)}
+                            style={{
+                              position: "absolute",
+                              top: -6,
+                              right: -6,
+                              background: "red",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "50%",
+                              width: "20px",
+                              height: "20px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
                 <div className={productStyles.uploadPlaceholder}>
                   <FiImage size={32} />
-                  <span>Drag & drop or click to upload multiple images</span>
+                  <span>Drag & drop or click to upload more images</span>
                   <small>PNG, JPG, WEBP, GIF up to 5MB each</small>
                 </div>
 
@@ -357,51 +412,60 @@ const ProductForm: React.FC = () => {
               </div>
             </div>
 
-            {/* Asset File */}
+            {/* ASSET FILE */}
             <div className={productStyles.uploadBox}>
-              <label>Asset File</label>
+              <label>Asset File (ZIP, etc.)</label>
               <div
                 ref={assetDropRef}
-                className={`${productStyles.dropzone} ${
-                  assetDragActive ? productStyles.dropzoneActive : ""
-                }`}
+                className={`${productStyles.dropzone} ${assetDragActive ? productStyles.dropzoneActive : ""}`}
                 onDragOver={(e) => handleDragOver(e, setAssetDragActive)}
                 onDragLeave={(e) => handleDragLeave(e, setAssetDragActive)}
-                onDrop={(e) => {
-                  const file = e.dataTransfer.files[0];
-                  handleAssetFile(file);
-                }}
+                onDrop={(e) => handleAssetFile(e.dataTransfer.files[0])}
               >
                 {productForm.asset_file instanceof File ? (
                   <div className={productStyles.fileInfo}>
-                    <FiFile size={24} />
+                    <FiFile size={28} />
                     <div>
-                      <strong>{productForm.asset_file.name}</strong>
+                      <strong>New File:</strong>
+                      <br />
+                      {productForm.asset_file.name}
+                      <br />
                       <small>
-                        {(productForm.asset_file.size / 1024).toFixed(0)} KB
+                        {(productForm.asset_file.size / (1024 * 1024)).toFixed(
+                          2,
+                        )}{" "}
+                        MB
                       </small>
                     </div>
                     <button
                       type="button"
-                      className={productStyles.removeBtn}
                       onClick={removeAsset}
+                      className={productStyles.removeBtn}
                     >
                       <FiX />
                     </button>
                   </div>
-                ) : editingProduct?.asset_url ? (
+                ) : editingProduct?.asset ? (
                   <div className={productStyles.fileInfo}>
-                    <FiFile size={24} />
+                    <FiFile size={28} />
                     <div>
-                      <strong>Existing File</strong>
-                      <small>Attached previously</small>
+                      <strong>Current Asset:</strong>
+                      <br />
+                      {editingProduct.asset.file_name}
                     </div>
+                    <a
+                      href={editingProduct.asset.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      ↓ Download
+                    </a>
                   </div>
                 ) : (
                   <div className={productStyles.uploadPlaceholder}>
                     <FiUpload size={32} />
-                    <span>Drag & drop file here</span>
-                    <small>ZIP, PDF, EXE, etc. (max 100MB)</small>
+                    <span>Drag & drop asset file here</span>
+                    <small>Max 100MB</small>
                   </div>
                 )}
 

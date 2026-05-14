@@ -111,7 +111,6 @@ export interface Category {
 }
 
 /* ================= PRODUCT ================= */
-
 export interface Product {
   id: number;
   title: string;
@@ -122,16 +121,29 @@ export interface Product {
   category_id: number;
   category?: { name: string } | null;
   is_published: boolean;
-  preview_url?: string;
-  preview_urls?: string[] | string | null; // ✅ aici am schimbat
-  asset_url?: string;
   slug: string;
   is_wishlisted?: boolean;
+
+  // Preview Images
+  preview_url?: string;
+  preview_urls?: string[];
+  previews?: Array<{
+    id: number;
+    url: string;
+    name: string;
+    size?: number;
+  }>;
+
+  // Asset File (ZIP, etc.)
+  asset_url?: string; // keep for backward compatibility
+  asset?: {
+    url: string;
+    file_name: string;
+    size: number;
+    mime_type: string;
+  } | null;
 }
-
 /* ================= PRODUCT FORM ================= */
-
-// src/types/index.ts
 export interface ProductFormData {
   title?: string;
   short_description?: string;

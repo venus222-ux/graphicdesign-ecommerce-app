@@ -55,7 +55,7 @@ interface AdminState {
   fetchProducts: (page?: number, search?: string) => Promise<void>;
   createOrUpdateProduct: () => Promise<void>;
   deleteProduct: (id: number) => Promise<void>;
-
+  deletePreviewImage: (productId: number, mediaId: number) => Promise<void>;
   /* ================= LOGS ================= */
   fetchLogs: (page?: number, search?: string) => Promise<void>;
   deleteLog: (id: string) => Promise<void>;
@@ -295,7 +295,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       const formData = new FormData();
 
-      // Text fields
       formData.append("title", productForm.title ?? "");
       formData.append("short_description", productForm.short_description ?? "");
       formData.append("description", productForm.description ?? "");
@@ -304,14 +303,14 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       formData.append("category_id", String(productForm.category_id ?? ""));
       formData.append("is_published", productForm.is_published ? "1" : "0");
 
-      // === MULTIPLE PREVIEW IMAGES ===
+      // Preview Images
       if (Array.isArray(productForm.preview_images)) {
         productForm.preview_images.forEach((file) => {
-          formData.append("preview_images[]", file); // ← Fixed
+          formData.append("preview_images[]", file);
         });
       }
 
-      // Asset file
+      // Asset File
       if (productForm.asset_file instanceof File) {
         formData.append("asset_file", productForm.asset_file);
       }
@@ -320,24 +319,48 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         ? `/admin/products/${editingProduct.id}`
         : "/admin/products";
 
-      const method = editingProduct ? "put" : "post";
+      if (editingProduct) {
+        formData.append("_method", "PUT");
+      }
 
-      await API[method](url, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      await API.post(url, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       toast.success(editingProduct ? "Product updated" : "Product created");
 
+      // Refresh list
       await get().fetchProducts(currentPage, searchTerm);
+
+      // If editing, refresh the editing product with full media
+      if (editingProduct) {
+        const refreshed = await API.get(`/admin/products/${editingProduct.id}`);
+
+        set({
+          editingProduct: refreshed.data.data ?? refreshed.data,
+        });
+      }
+
       get().resetProductForm();
     } catch (error: any) {
       console.error(error);
       toast.error(error.response?.data?.message || "Error saving product");
     }
   },
+  deletePreviewImage: async (productId: number, mediaId: number) => {
+    try {
+      await API.delete(`/admin/products/${productId}/media/${mediaId}`);
+      toast.success("Image deleted");
 
+      const res = await API.get(`/admin/products/${productId}`);
+
+      set({
+        editingProduct: res.data.data ?? res.data,
+      });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete image");
+    }
+  },
   deleteProduct: async (id: number) => {
     if (!window.confirm("Delete this product?")) return;
 
@@ -493,13 +516,12 @@ export const useAdminStore = create<AdminState>((set, get) => ({
             asset_type: product.asset_type,
             category_id: product.category_id,
             is_published: product.is_published,
-            preview_images: null,
-            asset_file: product.asset_url || undefined,
+            preview_images: null, // important
+            asset_file: null, // ← Changed to null
           }
-        : { is_published: false, preview_images: null },
+        : { is_published: false, preview_images: null, asset_file: null },
     });
   },
-
   updateProductForm: (updates) =>
     set((state) => ({
       productForm: { ...state.productForm, ...updates },

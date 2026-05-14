@@ -22,10 +22,10 @@ class UpdateProductRequest extends FormRequest
             'category_id' => 'sometimes|required|exists:categories,id',
             'is_published' => 'sometimes|boolean',
 
-            // Files
-           'preview_images' => 'nullable|array',
-           'preview_images.*' => 'image|mimes:jpeg,png,jpg,webp,gif|max:5120',
-            'asset_file'    => 'nullable|file|max:102400', // 100 MB
+            'preview_images' => 'nullable|array',
+            'preview_images.*' => 'image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+
+            'asset_file' => 'nullable|file|max:102400',
         ];
     }
 }

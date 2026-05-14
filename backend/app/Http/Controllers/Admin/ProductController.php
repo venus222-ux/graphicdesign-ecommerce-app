@@ -2,29 +2,29 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\FileUploaded;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
-use App\Models\Product;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use App\Events\FileUploaded;
 use App\Http\Resources\ProductResource;
+use App\Models\Product;
 use App\Services\ProductMediaService;
-use Illuminate\Support\Facades\Log;
-use Throwable;
 use App\Services\ProductSearchService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Throwable;
 
 class ProductController extends Controller
 {
     /* ================= INDEX ================= */
+
 public function index(Request $request)
 {
     $perPage = $request->input('per_page', 10);
     $search = $request->input('search');
 
-    $query = Product::with(['category', 'media'])   // ← ADD 'media' here
-                    ->latest();
+    $query = Product::with(['category', 'media'])->latest();
 
     if ($search) {
         $query->where(function ($q) use ($search) {
@@ -33,148 +33,179 @@ public function index(Request $request)
         });
     }
 
-    return $query->paginate($perPage);
+    $products = $query->paginate($perPage);
+
+    return ProductResource::collection($products)->response();
 }
+    /* ================= SHOW ================= */
 
+    public function show(Product $product)
+    {
+        $product->load(['category', 'media']);
 
-public function store(
-    StoreProductRequest $request,
-    ProductSearchService $searchService,
-    ProductMediaService $mediaService
-) {
-    try {
+        $product->is_wishlisted = auth()->check()
+            ? auth()->user()
+                ->wishlistProducts()
+                ->where('product_id', $product->id)
+                ->exists()
+            : false;
+
+        return new ProductResource($product);
+    }
+
+    /* ================= STORE ================= */
+
+    public function store(
+        StoreProductRequest $request,
+        ProductMediaService $mediaService
+    ) {
         $data = $request->validated();
+
         $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
         $data['user_id'] = auth()->id();
 
         $product = Product::create($data);
 
-        // Save multiple images
-        $mediaService->syncPreviewImages($product);   // no true here
+        $mediaService->syncPreviewImages($product);
 
         if ($request->hasFile('asset_file')) {
             $product->addMedia($request->file('asset_file'))
-                    ->toMediaCollection('asset');
+                ->toMediaCollection('asset');
         }
 
-        $product->load('media');
+        $product->load(['category', 'media']);
 
         return response()->json([
             'message' => 'Product created',
-            'data' => new ProductResource($product)
+            'data' => new ProductResource($product),
         ], 201);
-
-    } catch (\Throwable $e) {
-        return response()->json([
-            'message' => 'Store failed',
-            'error' => $e->getMessage(),
-        ], 500);
     }
-}
 
+    /* ================= DELETE SINGLE PREVIEW IMAGE ================= */
 
+    public function deleteMedia(Product $product, $mediaId)
+    {
+        try {
+            $media = $product->media()
+                ->where('id', $mediaId)
+                ->first();
 
-public function update(
-    UpdateProductRequest $request,
-    Product $product,
-    ProductSearchService $searchService,
-    ProductMediaService $mediaService
-  ) {
-    try {
+            if (!$media) {
+                return response()->json([
+                    'message' => 'Media not found',
+                ], 404);
+            }
+
+            if ($media->collection_name !== 'previews') {
+                return response()->json([
+                    'message' => 'Cannot delete this file',
+                ], 403);
+            }
+
+            $media->delete();
+
+            $product->load('media');
+
+            return response()->json([
+                'message' => 'Image deleted successfully',
+                'data' => new ProductResource($product),
+            ]);
+        } catch (Throwable $e) {
+            Log::error('Failed to delete media', [
+                'product_id' => $product->id,
+                'media_id' => $mediaId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to delete image',
+                'error' => config('app.debug')
+                    ? $e->getMessage()
+                    : null,
+            ], 500);
+        }
+    }
+
+    /* ================= UPDATE ================= */
+
+    public function update(
+        UpdateProductRequest $request,
+        Product $product,
+        ProductMediaService $mediaService
+    ) {
         $data = $request->validated();
 
-        if (isset($data['is_published'])) {
-            $data['is_published'] = (bool) $data['is_published'];
-        }
-
-        if (isset($data['title']) && $data['title'] !== $product->title) {
+        if (
+            isset($data['title']) &&
+            $data['title'] !== $product->title
+        ) {
             $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
         }
 
         $product->update($data);
 
-        // 🔥 REPLACE images clean
-     $mediaService->syncPreviewImages($product, true);
+        $mediaService->syncPreviewImages($product, true);
 
         if ($request->hasFile('asset_file')) {
             $product->clearMediaCollection('asset');
 
-            $media = $product
-                ->addMedia($request->file('asset_file'))
+            $product->addMedia($request->file('asset_file'))
                 ->toMediaCollection('asset');
-
-            FileUploaded::dispatch(
-                $product,
-                [
-                    'file_name' => $media->file_name,
-                    'size' => $media->size,
-                    'mime' => $media->mime_type,
-                    'path' => $media->getPath(),
-                ],
-                auth()->user(),
-                $request->ip(),
-                $request->userAgent()
-            );
         }
-       $product->load('media');
-        $searchService->index($product);
 
-        return response()->json(
-            new ProductResource($product->fresh()->load(['category', 'media'])),
-            200
-        );
+        $product->load(['category', 'media']);
 
-    } catch (\Throwable $e) {
-        return response()->json([
-            'message' => 'Update failed',
-            'error' => $e->getMessage(),
-        ], 500);
-    }
-}
-
-
-/**
- * Delete a product
- */
- public function destroy(Product $product, ProductSearchService $searchService)
-{
-    $id = $product->id;
-
-    try {
-        // This will throw ModelNotFoundException if the model binding fails,
-        // but since you're using route model binding, it should already be loaded.
-        $product->delete();   // or $product->forceDelete() if you want hard delete
-
-    } catch (\Throwable $e) {
-        Log::error('Failed to delete product from database', [
-            'product_id' => $id,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
+        $product->is_wishlisted = auth()->check()
+            ? auth()->user()
+                ->wishlistProducts()
+                ->where('product_id', $product->id)
+                ->exists()
+            : false;
 
         return response()->json([
-            'message' => 'Failed to delete product from database',
-            'error'   => config('app.debug') ? $e->getMessage() : null,
-        ], 500);
-    }
-
-    /* ================= ELASTICSEARCH (NON-BLOCKING) ================= */
-    try {
-        $searchService->delete($id);
-    } catch (\Throwable $e) {
-        // Log the Elasticsearch error but **do not fail** the whole request
-        // (the product is already deleted from DB — that's the source of truth)
-        Log::warning('Failed to delete product from Elasticsearch', [
-            'product_id' => $id,
-            'error' => $e->getMessage(),
+            'message' => 'Product updated',
+            'data' => new ProductResource($product),
         ]);
-
-        // You can still return success, or return a partial success message
     }
 
-    return response()->json([
-        'message' => 'Product deleted successfully'
-    ]);
-}
-}
+    /* ================= DESTROY ================= */
 
+    public function destroy(
+        Product $product,
+        ProductSearchService $searchService
+    ) {
+        $id = $product->id;
+
+        try {
+            $product->delete();
+        } catch (Throwable $e) {
+            Log::error('Failed to delete product from database', [
+                'product_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => 'Failed to delete product from database',
+                'error' => config('app.debug')
+                    ? $e->getMessage()
+                    : null,
+            ], 500);
+        }
+
+        /* ================= ELASTICSEARCH (NON-BLOCKING) ================= */
+
+        try {
+            $searchService->delete($id);
+        } catch (Throwable $e) {
+            Log::warning('Failed to delete product from Elasticsearch', [
+                'product_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Product deleted successfully',
+        ]);
+    }
+}
