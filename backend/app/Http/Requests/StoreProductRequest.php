@@ -11,21 +11,28 @@ class StoreProductRequest extends FormRequest
         return true;
     }
 
-    public function rules(): array
-    {
-        return [
-            'title' => 'required|string|max:255',
-            'short_description' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price' => 'required|numeric|min:0',
-            'asset_type' => 'required|string',
-            'category_id' => 'required|exists:categories,id',
-            'is_published' => 'required|boolean',
+public function rules(): array
+{
+    return [
+        'title' => 'required|string|max:255',
+        'short_description' => 'required|string|max:255',
+        'description' => 'required|string',
+        'price' => 'required|numeric|min:0',
 
-            'preview_images' => 'nullable|array',
-            'preview_images.*' => 'image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+        // === DISCOUNT FIELDS ===
+        'discount_percentage' => 'nullable|numeric|min:0|max:100',
+        'discount_fixed'      => 'nullable|numeric|min:0',
+        'discount_starts_at'  => 'nullable|date',
+        'discount_ends_at'    => 'nullable|date|after_or_equal:discount_starts_at',
 
-            'asset_file' => 'nullable|file|mimes:zip,rar,pdf,psd|max:102400',
-        ];
-    }
+        'asset_type' => 'required|string',
+        'category_id' => 'required|exists:categories,id',
+        'is_published' => 'required|boolean',
+
+        'preview_images' => 'nullable|array',
+        'preview_images.*' => 'image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+
+        'asset_file' => 'nullable|file|mimes:zip,rar,pdf,psd|max:102400',
+    ];
+}
 }

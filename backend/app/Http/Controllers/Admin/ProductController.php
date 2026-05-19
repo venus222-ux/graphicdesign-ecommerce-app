@@ -55,16 +55,18 @@ public function index(Request $request)
 
     /* ================= STORE ================= */
 
-    public function store(
-        StoreProductRequest $request,
-        ProductMediaService $mediaService
-    ) {
-        $data = $request->validated();
+public function store(StoreProductRequest $request, ProductMediaService $mediaService)
+{
+    $data = $request->validated();
 
-        $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
-        $data['user_id'] = auth()->id();
+    $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
+    $data['user_id'] = auth()->id();
 
-        $product = Product::create($data);
+    // Asigură valori default pentru discount
+    $data['discount_percentage'] = $data['discount_percentage'] ?? 0;
+    $data['discount_fixed'] = $data['discount_fixed'] ?? null;
+
+    $product = Product::create($data);
 
         $mediaService->syncPreviewImages($product);
 
@@ -130,21 +132,24 @@ public function deleteMedia(Product $product, $mediaId)
 }
     /* ================= UPDATE ================= */
 
-    public function update(
-        UpdateProductRequest $request,
-        Product $product,
-        ProductMediaService $mediaService
-    ) {
-        $data = $request->validated();
+public function update(UpdateProductRequest $request, Product $product, ProductMediaService $mediaService)
+{
+    $data = $request->validated();
 
-        if (
-            isset($data['title']) &&
-            $data['title'] !== $product->title
-        ) {
-            $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
-        }
+    if (isset($data['title']) && $data['title'] !== $product->title) {
+        $data['slug'] = Str::slug($data['title']) . '-' . uniqid();
+    }
 
-        $product->update($data);
+    // Discount defaults
+if (!array_key_exists('discount_percentage', $data)) {
+    $data['discount_percentage'] = $product->discount_percentage;
+}
+
+if (!array_key_exists('discount_fixed', $data)) {
+    $data['discount_fixed'] = $product->discount_fixed;
+}
+
+    $product->update($data);
 
         $mediaService->syncPreviewImages($product, true);
 
@@ -168,7 +173,7 @@ public function deleteMedia(Product $product, $mediaId)
             'message' => 'Product updated',
             'data' => new ProductResource($product),
         ]);
-    }
+}
 
     /* ================= DESTROY ================= */
 

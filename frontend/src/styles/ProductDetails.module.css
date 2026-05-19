@@ -1,59 +1,219 @@
+/* ==========================================================================
+   Premium Product Detail Layout System Styles
+   ========================================================================== */
+
+.pageWrapper {
+  background-color: #f8fafc;
+  min-height: 100vh;
+  color: #0f172a;
+}
+
+.breadcrumbActive {
+  color: #6366f1;
+}
+
+/* Image Presentation Core Engine */
+.mainImageWrapper {
+  position: relative;
+  width: 100%;
+}
+
 .featuredImageContainer {
   position: relative;
-  aspect-ratio: 16/10;
-  background: #f8f9fa;
+  aspect-ratio: 16 / 10;
+  background: #ffffff;
   border-radius: 20px;
   overflow: hidden;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.02);
 }
 
 .mainDisplayImage {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* Prevents stretching */
+  object-fit: contain;
+  padding: 1rem;
+  background: #ffffff;
 }
 
-.thumb {
-  width: 80px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 8px;
-  cursor: pointer;
-  opacity: 0.6;
-  transition: all 0.2s;
-  border: 2px solid transparent;
-}
-
-.thumbActive {
-  opacity: 1;
-  border-color: #0d6efd;
-}
-
+/* Carousel Control Interfaces */
 .navBtnPrev,
 .navBtnNext {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  width: 40px;
-  height: 40px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   font-size: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  color: #0f172a;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.navBtnPrev:hover,
+.navBtnNext:hover {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
 }
 
 .navBtnPrev {
-  left: 15px;
+  left: 20px;
 }
 .navBtnNext {
-  right: 15px;
+  right: 20px;
+}
+
+/* Carousel Thumbnails Grid */
+.thumb {
+  width: 90px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 10px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: all 0.25s ease;
+  border: 2px solid transparent;
+  background: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.thumb:hover {
+  opacity: 0.85;
+}
+
+.thumbActive {
+  opacity: 1 !important;
+  border-color: #6366f1;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+.noImagePlaceholder {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: #f1f5f9;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-weight: 500;
+  border: 2px dashed #cbd5e1;
+}
+
+/* Status Pill Indicators */
+.assetTypeBadge {
+  background: rgba(99, 102, 241, 0.08);
+  color: #6366f1;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 30px;
+  border: 1px solid rgba(99, 102, 241, 0.12);
+}
+
+.saleBadge {
+  background: #ef4444;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  padding: 6px 14px;
+  border-radius: 30px;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
+/* Commercial Point-Of-Sale Terminal Card */
+.purchaseCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.03) !important;
+}
+
+.letter-spacing-glance {
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+}
+
+.defaultPrice {
+  color: #0f172a;
+}
+
+.activeDiscountPrice {
+  color: #22c55e; /* Productive conversion green */
+}
+
+.strikeThroughPrice {
+  text-decoration: line-through;
+  color: #94a3b8;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.addToCartBtn {
+  background: #0f172a;
+  color: #ffffff;
+  border: none;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.addToCartBtn:hover {
+  background: #6366f1;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.2);
+}
+
+.addToCartBtn:active {
+  transform: translateY(1px);
+}
+
+.border-top-dashed {
+  border-top: 1px dashed #e2e8f0;
+}
+
+/* Metadata Profile Attributes boxes */
+.metaBox {
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.01);
+}
+
+/* Detailed Information Container Modules */
+.descriptionCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.01);
 }
 
 .descriptionBody {
-  line-height: 1.8;
+  line-height: 1.75;
   white-space: pre-line;
-  font-size: 1.05rem;
+  font-size: 0.975rem;
+  color: #475569 !important;
+}
+
+.viewAllLink {
+  color: #6366f1;
+  transition: color 0.2s;
+}
+
+.viewAllLink:hover {
+  color: #4f46e5;
+}
+
+/* System State Layout Helpers */
+.min-vh-50 {
+  min-height: 50vh;
 }

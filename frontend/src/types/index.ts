@@ -117,13 +117,25 @@ export interface Product {
   short_description: string;
   description: string;
   price?: number;
+  // DISCOUNTS
+  old_price?: number;
+  final_price?: number;
+  discount_percentage?: number | null;
+  discount_fixed?: number | null;
+  effective_discount_percentage?: number;
+  discount_type?: "percent" | "fixed" | null;
+  discount_value?: number | null;
+  has_discount?: boolean;
+  is_new?: boolean;
+  // PRODUCT
   asset_type: string;
   category_id: number;
-  category?: { name: string } | null;
+  category?: {
+    name: string;
+  } | null;
   is_published: boolean;
   slug: string;
   is_wishlisted?: boolean;
-
   // Preview Images
   preview_url?: string;
   preview_urls?: string[];
@@ -134,32 +146,32 @@ export interface Product {
     size?: number;
   }>;
 
-  // Asset File (ZIP, etc.)
-  asset_url?: string; // keep for backward compatibility
+  // Asset File
+  asset_url?: string;
   asset?: {
+    id: number;
     url: string;
     file_name: string;
     size: number;
     mime_type: string;
   } | null;
 }
+
 /* ================= PRODUCT FORM ================= */
 export interface ProductFormData {
   title?: string;
   short_description?: string;
   description?: string;
   price?: number;
+  discount_percentage?: number | null;
+  discount_fixed?: number | null;
+  discount_starts_at?: string;
+  discount_ends_at?: string;
   asset_type?: string;
   category_id?: number;
-  is_published: boolean; // ✅ required and always boolean
-  // Single image (optional)
-  preview_image?: File | string | null;
-
-  // 🔹 Multiple images support
+  is_published: boolean;
   preview_images?: File[] | null;
-
-  // Asset file
-  asset_file?: File | string | null;
+  asset_file?: File | null;
 }
 /* ================= PAGINATION ================= */
 

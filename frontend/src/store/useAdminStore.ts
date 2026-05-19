@@ -294,11 +294,28 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
     try {
       const formData = new FormData();
-
       formData.append("title", productForm.title ?? "");
       formData.append("short_description", productForm.short_description ?? "");
       formData.append("description", productForm.description ?? "");
       formData.append("price", String(productForm.price ?? 0));
+
+      formData.append(
+        "discount_percentage",
+        String(productForm.discount_percentage ?? 0),
+      );
+
+      if (productForm.discount_fixed !== null) {
+        formData.append("discount_fixed", String(productForm.discount_fixed));
+      }
+
+      if (productForm.discount_starts_at) {
+        formData.append("discount_starts_at", productForm.discount_starts_at);
+      }
+
+      if (productForm.discount_ends_at) {
+        formData.append("discount_ends_at", productForm.discount_ends_at);
+      }
+
       formData.append("asset_type", productForm.asset_type ?? "");
       formData.append("category_id", String(productForm.category_id ?? ""));
       formData.append("is_published", productForm.is_published ? "1" : "0");
@@ -513,13 +530,19 @@ export const useAdminStore = create<AdminState>((set, get) => ({
             short_description: product.short_description,
             description: product.description,
             price: product.price,
+            discount_percentage: product.discount_percentage ?? 0,
+            discount_fixed: product.discount_fixed ?? null,
             asset_type: product.asset_type,
             category_id: product.category_id,
             is_published: product.is_published,
             preview_images: null, // important
             asset_file: null, // ← Changed to null
           }
-        : { is_published: false, preview_images: null, asset_file: null },
+        : {
+            is_published: false,
+            discount_percentage: 0,
+            discount_fixed: null,
+          },
     });
   },
   updateProductForm: (updates) =>

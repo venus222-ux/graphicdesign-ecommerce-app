@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCartStore } from "../store/useCartStore";
 import API from "../api";
@@ -8,6 +8,14 @@ import { toast } from "react-toastify";
 import BillingAddressForm, {
   BillingData,
 } from "../components/BillingAddressForm";
+import {
+  ShoppingBag,
+  ShieldCheck,
+  ArrowRight,
+  Edit3,
+  Loader2,
+  Tag,
+} from "lucide-react";
 
 const VAT_RATE = 0.21;
 
@@ -31,12 +39,33 @@ const Checkout = () => {
   const [hasProfileAddress, setHasProfileAddress] = useState(false);
   const [editMode, setEditMode] = useState(false);
 
-  const subtotal = items.reduce(
-    (acc, i) => acc + i.quantity * Number(i.price || 0),
-    0,
-  );
-  const vat = subtotal * VAT_RATE;
-  const totalPrice = subtotal + vat;
+  // 🏷️ CALCULATE ADVANCED PRICING AND DISCOUNTS
+  const { totalOriginalSubtotal, totalFinalSubtotal, totalDiscountSaved } =
+    useMemo(() => {
+      return items.reduce(
+        (acc, item) => {
+          const qty = item.quantity || 1;
+          const originalPrice = Number(item.price || 0);
+          const finalPrice =
+            item.has_discount && item.final_price !== undefined
+              ? Number(item.final_price)
+              : originalPrice;
+
+          acc.totalOriginalSubtotal += qty * originalPrice;
+          acc.totalFinalSubtotal += qty * finalPrice;
+          acc.totalDiscountSaved += qty * (originalPrice - finalPrice);
+          return acc;
+        },
+        {
+          totalOriginalSubtotal: 0,
+          totalFinalSubtotal: 0,
+          totalDiscountSaved: 0,
+        },
+      );
+    }, [items]);
+
+  const vat = totalFinalSubtotal * VAT_RATE;
+  const totalPrice = totalFinalSubtotal + vat;
 
   useEffect(() => {
     API.get("/profile")
@@ -106,12 +135,16 @@ const Checkout = () => {
     return (
       <div className={styles.emptyContainer}>
         <div className={styles.emptyContent}>
-          <span style={{ fontSize: "4rem" }}>🛒</span>
-          <h3>Your cart is empty</h3>
-          <p>Looks like you haven't added anything yet.</p>
+          <div className={styles.emptyIconWrapper}>
+            <ShoppingBag size={36} />
+          </div>
+          <h3 className="fw-bold mt-4">Your cart is empty</h3>
+          <p className="text-secondary mb-4">
+            Looks like you haven't added any digital assets yet.
+          </p>
           <button
             onClick={() => navigate("/shop")}
-            className={styles.primaryBtn}
+            className={styles.returnShopBtn}
           >
             Return to Shop
           </button>
@@ -123,19 +156,24 @@ const Checkout = () => {
   return (
     <div className={styles.checkoutContainer}>
       <div className={styles.layout}>
-        {/* LEFT COLUMN: BILLING */}
+        {/* LEFT COLUMN: BILLING WORKSPACE */}
         <section className={styles.mainContent}>
-          <h2 className={styles.sectionTitle}>Checkout</h2>
+          <h1 className={styles.sectionTitle}>Secure Checkout</h1>
 
           {hasProfileAddress && !editMode ? (
             <div className={styles.savedAddressCard}>
               <div className={styles.cardHeader}>
-                <h4>Billing Address</h4>
+                <div>
+                  <h4 className="fw-bold m-0">Billing Address</h4>
+                  <small className="text-muted">
+                    Linked address profile workspace
+                  </small>
+                </div>
                 <button
                   onClick={() => setEditMode(true)}
                   className={styles.editBtn}
                 >
-                  Edit
+                  <Edit3 size={14} /> Edit details
                 </button>
               </div>
               <div className={styles.addressDetails}>
@@ -149,9 +187,11 @@ const Checkout = () => {
                 </p>
                 <p className={styles.countryName}>{billing.country}</p>
                 {billing.vat_number && (
-                  <p className={styles.vatInfo}>
-                    <strong>VAT:</strong> {billing.vat_number}
-                  </p>
+                  <div className="mt-3">
+                    <span className="badge bg-light text-secondary border px-2.5 py-1.5 fw-semibold">
+                      VAT Account: {billing.vat_number}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
@@ -163,7 +203,7 @@ const Checkout = () => {
                 showSaveToProfile={true}
                 saveToProfile={saveToProfile}
                 onSaveToProfileChange={setSaveToProfile}
-                title="Billing Details"
+                title="Billing Specifications"
               />
             </div>
           )}
@@ -174,55 +214,88 @@ const Checkout = () => {
             disabled={loading}
           >
             {loading ? (
-              <span className={styles.loader}></span>
+              <span className="d-flex align-items-center justify-content-center gap-2">
+                <Loader2 size={18} className={styles.spinner} /> Allocating Core
+                Line Order...
+              </span>
             ) : (
-              `Complete Purchase — $${totalPrice.toFixed(2)}`
+              <span className="d-flex align-items-center justify-content-center gap-2">
+                Complete Purchase — ${totalPrice.toFixed(2)}{" "}
+                <ArrowRight size={16} />
+              </span>
             )}
           </button>
         </section>
 
-        {/* RIGHT COLUMN: SUMMARY */}
+        {/* RIGHT COLUMN: DISCOUNTS-AWARE LEDGER SUMMARY */}
         <aside className={styles.orderPreview}>
-          <h4 className={styles.summaryTitle}>Order Summary</h4>
+          <h4 className={styles.summaryTitle}>Order Manifest</h4>
           <div className={styles.miniItemList}>
-            {items.map((item) => (
-              <div key={item.id} className={styles.miniItem}>
-                <div className={styles.itemInfo}>
-                  <div className={styles.qtyBadge}>{item.quantity}</div>
-                  <div className={styles.itemTexts}>
-                    <p className={styles.itemTitle}>{item.title}</p>
-                    <small className={styles.itemCategory}>
-                      {item.category?.name || "General"}
-                    </small>
+            {items.map((item) => {
+              const isDiscounted = !!item.has_discount;
+              const unitPrice =
+                isDiscounted && item.final_price !== undefined
+                  ? Number(item.final_price)
+                  : Number(item.price || 0);
+              const originalUnitPrice = Number(item.price || 0);
+
+              return (
+                <div key={item.id} className={styles.miniItem}>
+                  <div className={styles.itemInfo}>
+                    <div className={styles.qtyBadge}>{item.quantity}</div>
+                    <div className={styles.itemTexts}>
+                      <p className={styles.itemTitle}>{item.title}</p>
+                      <small className={styles.itemCategory}>
+                        {item.category?.name || "Digital Asset"}
+                      </small>
+                    </div>
+                  </div>
+                  <div className="text-end">
+                    <span className={styles.itemPrice}>
+                      ${(item.quantity * unitPrice).toFixed(2)}
+                    </span>
+                    {isDiscounted && originalUnitPrice > unitPrice && (
+                      <span className={styles.itemOldPrice}>
+                        ${(item.quantity * originalUnitPrice).toFixed(2)}
+                      </span>
+                    )}
                   </div>
                 </div>
-                <span className={styles.itemPrice}>
-                  ${(item.quantity * Number(item.price || 0)).toFixed(2)}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className={styles.summaryTotals}>
             <div className={styles.totalLine}>
               <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span className="fw-medium text-dark">
+                ${totalOriginalSubtotal.toFixed(2)}
+              </span>
             </div>
+
+            {totalDiscountSaved > 0 && (
+              <div className={`${styles.totalLine} ${styles.discountLine}`}>
+                <span className="d-flex align-items-center gap-1">
+                  <Tag size={13} /> Asset Markdowns
+                </span>
+                <span>-${totalDiscountSaved.toFixed(2)}</span>
+              </div>
+            )}
+
             <div className={styles.totalLine}>
               <span>VAT (21%)</span>
-              <span>${vat.toFixed(2)}</span>
+              <span className="fw-medium text-dark">${vat.toFixed(2)}</span>
             </div>
+
             <div className={`${styles.totalLine} ${styles.grandTotal}`}>
-              <span>Total</span>
+              <span>Total Amount</span>
               <span>${totalPrice.toFixed(2)}</span>
             </div>
           </div>
 
           <div className={styles.secureNote}>
-            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
-            </svg>
-            Secure SSL Encrypted Payment
+            <ShieldCheck size={16} className="text-success" />
+            <span>Secure Enterprise SSL Encrypted System</span>
           </div>
         </aside>
       </div>

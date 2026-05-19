@@ -168,27 +168,69 @@ const ProductForm: React.FC = () => {
           <div className={productStyles.row}>
             <div className={productStyles.inputGroup}>
               <label>Price (USD)</label>
+
               <input
                 type="number"
                 step="0.01"
-                placeholder="0.00"
                 value={productForm.price || ""}
                 onChange={(e) =>
-                  updateProductForm({ price: Number(e.target.value) })
+                  updateProductForm({
+                    price: Number(e.target.value),
+                  })
                 }
                 required
               />
             </div>
+
+            <div className={productStyles.inputGroup}>
+              <label>Discount %</label>
+
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={productForm.discount_percentage ?? 0}
+                onChange={(e) =>
+                  updateProductForm({
+                    discount_percentage: Number(e.target.value),
+                  })
+                }
+              />
+            </div>
+
+            <div className={productStyles.inputGroup}>
+              <label>Discount Fixed (USD)</label>
+
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={productForm.discount_fixed ?? ""}
+                onChange={(e) =>
+                  updateProductForm({
+                    discount_fixed: e.target.value
+                      ? Number(e.target.value)
+                      : null,
+                  })
+                }
+              />
+            </div>
+
             <div className={productStyles.inputGroup}>
               <label>Category</label>
+
               <select
                 value={productForm.category_id || ""}
                 onChange={(e) =>
-                  updateProductForm({ category_id: Number(e.target.value) })
+                  updateProductForm({
+                    category_id: Number(e.target.value),
+                  })
                 }
                 required
               >
-                <option value="">Select...</option>
+                <option value="">Select category...</option>
+
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}

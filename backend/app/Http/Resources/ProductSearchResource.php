@@ -33,17 +33,20 @@ class ProductSearchResource extends JsonResource
         }
 
         return [
-            'id'                => $resource->id ?? null,
-            'slug'              => $resource->slug ?? null,
-            'title'             => $resource->title ?? null,
-            'price'             => $resource->price ?? null,
-            'short_description' => $resource->short_description ?? null,
-            'description'       => $resource->description ?? null,
-            'asset_type'        => $resource->asset_type ?? 'Premium',
-            'score'             => $resource->score ?? null,
-            'preview_url'       => $previewUrl,
-            'preview_urls'      => $previewUrls,
-            'category'          => $category,
+            'id'                 => $resource->id ?? null,
+            'slug'               => $resource->slug ?? null,
+            'title'              => $resource->title ?? null,
+            'price'              => $resource->price ?? null,
+            'final_price'        => $this->final_price ?? $this->price ?? null,
+            'old_price'          => $this->old_price ?? null,
+            'discount_percentage'=> $this->discount_percentage ?? null,
+            'short_description'  => $resource->short_description ?? null,
+            'description'        => $resource->description ?? null,
+            'asset_type'         => $resource->asset_type ?? 'Premium',
+            'score'              => $resource->score ?? null,
+            'preview_url'        => $previewUrl,
+            'preview_urls'       => $previewUrls,
+            'category'           => $category,
         ];
     }
 }

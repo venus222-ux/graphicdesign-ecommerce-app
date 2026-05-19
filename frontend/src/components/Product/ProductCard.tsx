@@ -8,8 +8,29 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  // ✅ stable access (NO transformation, NO memo needed)
   const previewUrl = product?.preview_urls?.[0] || product?.preview_url || null;
+
+  // COMPREHENSIVE DISCOUNT CALCULATION
+  const hasDiscount = !!product.has_discount;
+  const finalPrice = product.final_price ?? product.price ?? 0;
+  const originalPrice = product.price ?? 0;
+
+  // Determine label details based on discount mechanism type
+  let discountLabel = "";
+  if (hasDiscount) {
+    if (product.discount_percentage && product.discount_percentage > 0) {
+      discountLabel = `-${product.discount_percentage}%`;
+    } else if (product.discount_fixed && product.discount_fixed > 0) {
+      discountLabel = `-$${Number(product.discount_fixed).toFixed(0)}`;
+    } else if (
+      product.effective_discount_percentage &&
+      product.effective_discount_percentage > 0
+    ) {
+      discountLabel = `-${product.effective_discount_percentage}%`;
+    } else {
+      discountLabel = "SALE";
+    }
+  }
 
   return (
     <div className={styles.card}>
@@ -20,12 +41,26 @@ const ProductCard = ({ product }: ProductCardProps) => {
             alt={product.title}
             className={styles.productImg}
             loading="lazy"
-            decoding="async"
           />
         ) : (
-          <div className={styles.noPreview}>📷 No Preview</div>
+          <div className={styles.noPreview}>
+            <span>📷 No Preview Provided</span>
+          </div>
         )}
 
+        {/* FLOATING ACTION BADGES */}
+        <div className={styles.badgeCluster}>
+          {hasDiscount && (
+            <div className={`${styles.badge} ${styles.discountBadge}`}>
+              {discountLabel}
+            </div>
+          )}
+          {product.is_new && (
+            <div className={`${styles.badge} ${styles.newBadge}`}>NEW</div>
+          )}
+        </div>
+
+        {/* INTERACTIVE ACTIONS HOVER OVERLAY */}
         <div className={styles.overlay}>
           <Link to={`/products/${product.slug}`} className={styles.quickView}>
             Quick View
@@ -33,17 +68,40 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </div>
       </div>
 
-      <h5 className={styles.productTitle}>{product.title}</h5>
+      {/* METADATA CONTENT PROFILE CONTAINER */}
+      <div className={styles.cardBody}>
+        {product.category?.name && (
+          <span className={styles.categoryTag}>{product.category.name}</span>
+        )}
+        <h5 className={styles.productTitle} title={product.title}>
+          {product.title}
+        </h5>
+      </div>
 
+      {/* FOOTER METRICS GRID */}
       <div className={styles.cardFooter}>
-        <span className={styles.price}>
-          ${Number(product.price).toFixed(2)}
-        </span>
+        <div className={styles.priceContainer}>
+          <span
+            className={`${styles.price} ${hasDiscount ? styles.finalPrice : styles.standardPrice}`}
+          >
+            ${Number(finalPrice).toFixed(2)}
+          </span>
 
-        <Link to={`/products/${product.slug}`} className={styles.detailsLink}>
-          Details →
-        </Link>
-        <WishlistButton product={product} />
+          {hasDiscount && originalPrice > finalPrice && (
+            <span className={styles.oldPrice}>
+              ${Number(originalPrice).toFixed(2)}
+            </span>
+          )}
+        </div>
+
+        <div className={styles.actions}>
+          <Link to={`/products/${product.slug}`} className={styles.detailsLink}>
+            Details →
+          </Link>
+          <div className={styles.wishlistWrapper}>
+            <WishlistButton product={product} />
+          </div>
+        </div>
       </div>
     </div>
   );

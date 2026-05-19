@@ -1,40 +1,78 @@
+import { useMemo } from "react";
 import { useCartStore } from "../store/useCartStore";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import styles from "../styles/Cart.module.css";
+import {
+  ShoppingBag,
+  Trash2,
+  Plus,
+  Minus,
+  ArrowRight,
+  Tag,
+  ShieldCheck,
+  Percent,
+} from "lucide-react";
 
-// ✅ VAT CONSTANT
 const VAT_RATE = 0.21;
 
 const Cart = () => {
+  const navigate = useNavigate();
   const { items, removeFromCart, increaseQty, decreaseQty } = useCartStore();
 
-  // SAFE CALCULATIONS (no store dependency bugs)
-  const totalItems = items.reduce((acc, i) => acc + i.quantity, 0);
+  // 📊 CALCULATE COMPREHENSIVE SUB-TOTALS & ASSET MARKDOWNS
+  const {
+    totalItems,
+    totalOriginalSubtotal,
+    totalFinalSubtotal,
+    totalDiscountSaved,
+  } = useMemo(() => {
+    return items.reduce(
+      (acc, item) => {
+        const qty = item.quantity || 1;
+        const originalPrice = Number(item.price || 0);
 
-  // ✅ SUBTOTAL (before VAT)
-  const subtotal = items.reduce(
-    (acc, i) => acc + i.quantity * Number(i.price || 0),
-    0,
-  );
+        // Resolve markdown structures seamlessly
+        const unitPrice =
+          item.has_discount && item.final_price !== undefined
+            ? Number(item.final_price)
+            : originalPrice;
 
-  // ✅ VAT
-  const vat = subtotal * VAT_RATE;
+        acc.totalItems += qty;
+        acc.totalOriginalSubtotal += qty * originalPrice;
+        acc.totalFinalSubtotal += qty * unitPrice;
+        acc.totalDiscountSaved += qty * (originalPrice - unitPrice);
+        return acc;
+      },
+      {
+        totalItems: 0,
+        totalOriginalSubtotal: 0,
+        totalFinalSubtotal: 0,
+        totalDiscountSaved: 0,
+      },
+    );
+  }, [items]);
 
-  // ✅ FINAL TOTAL
-  const totalPrice = subtotal + vat;
+  const vat = totalFinalSubtotal * VAT_RATE;
+  const totalPrice = totalFinalSubtotal + vat;
 
   if (!items || items.length === 0) {
     return (
-      <div className={styles.emptyCart}>
-        <div className="text-center py-5">
-          <span style={{ fontSize: "4rem" }}>🛒</span>
-          <h3 className="mt-3">Your cart is empty</h3>
-          <p className="text-muted">
-            Looks like you haven't added anything yet.
+      <div className={styles.emptyContainer}>
+        <div className={styles.emptyContent}>
+          <div className={styles.emptyIconWrapper}>
+            <ShoppingBag size={36} />
+          </div>
+          <h3 className="fw-bold mt-4">Your cart is empty</h3>
+          <p className="text-secondary mb-4">
+            Looks like you haven't assigned any digital assets to this checkout
+            session yet.
           </p>
-          <Link to="/shop" className="btn btn-primary px-4 mt-2">
-            Go Shopping
-          </Link>
+          <button
+            onClick={() => navigate("/shop")}
+            className={styles.returnShopBtn}
+          >
+            Explore Digital Shop
+          </button>
         </div>
       </div>
     );
@@ -42,17 +80,30 @@ const Cart = () => {
 
   return (
     <div className={styles.cartContainer}>
-      <h2 className="mb-4 fw-bold">Shopping Cart</h2>
+      <h1 className={styles.sectionTitle}>Shopping Cart Workspace</h1>
 
       <div className={styles.cartGrid}>
-        {/* LEFT SIDE */}
+        {/* LEFT COLUMN: ITEM MANIFEST */}
         <div className={styles.itemList}>
           {items.map((item) => {
             const image = Array.isArray(item.preview_urls)
               ? item.preview_urls[0]
-              : item.preview_urls;
+              : item.preview_url || item.preview_urls;
 
-            const subtotal = item.quantity * Number(item.price || 0);
+            const isDiscounted = !!item.has_discount;
+            const originalPrice = Number(item.price || 0);
+            const unitPrice =
+              isDiscounted && item.final_price !== undefined
+                ? Number(item.final_price)
+                : originalPrice;
+
+            // 💡 Dynamic Calculation: Prevents structural backend logic errors/0% bugs
+            const actualDiscountPercentage = useMemo(() => {
+              if (originalPrice <= 0 || unitPrice >= originalPrice) return 0;
+              return Math.round(
+                ((originalPrice - unitPrice) / originalPrice) * 100,
+              );
+            }, [originalPrice, unitPrice]);
 
             return (
               <div key={item.id} className={styles.itemCard}>
@@ -60,81 +111,121 @@ const Cart = () => {
                   src={image || "/placeholder.png"}
                   alt={item.title}
                   className={styles.productImg}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/placeholder.png";
+                  }}
                 />
 
                 <div className={styles.itemDetails}>
-                  <h5 className={styles.itemTitle}>{item.title}</h5>
-                  <p className={styles.itemCategory}>
-                    {item.category?.name || "General"}
-                  </p>
+                  <div>
+                    <h5 className={styles.itemTitle}>{item.title}</h5>
+                    <p className={styles.itemCategory}>
+                      {item.category?.name || "Digital Asset"}
+                    </p>
+                  </div>
 
                   <button
                     className={styles.removeBtn}
                     onClick={() => removeFromCart(item.id)}
                   >
-                    Remove
+                    <Trash2 size={14} /> <span>Remove</span>
                   </button>
                 </div>
 
-                <div className={styles.qtyControls}>
-                  <button
-                    className={styles.qtyBtn}
-                    onClick={() => decreaseQty(item.id)}
-                  >
-                    -
-                  </button>
-
-                  <span className={styles.qtyValue}>{item.quantity}</span>
-
-                  <button
-                    className={styles.qtyBtn}
-                    onClick={() => increaseQty(item.id)}
-                  >
-                    +
-                  </button>
+                <div className={styles.qtyContainer}>
+                  <div className={styles.qtyControls}>
+                    <button
+                      className={styles.qtyBtn}
+                      onClick={() => decreaseQty(item.id)}
+                      disabled={item.quantity <= 1}
+                    >
+                      <Minus size={12} />
+                    </button>
+                    <span className={styles.qtyValue}>{item.quantity}</span>
+                    <button
+                      className={styles.qtyBtn}
+                      onClick={() => increaseQty(item.id)}
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className={styles.priceTag}>
-                  <strong>${subtotal.toFixed(2)}</strong>
+                  <span className={styles.calculatedPrice}>
+                    ${(item.quantity * unitPrice).toFixed(2)}
+                  </span>
+
+                  {isDiscounted && originalPrice > unitPrice && (
+                    <div className={styles.discountMetadata}>
+                      <span className={styles.itemOldPrice}>
+                        ${(item.quantity * originalPrice).toFixed(2)}
+                      </span>
+                      {/* Only render badge if calculation outputs a mathematically real markdown */}
+                      {actualDiscountPercentage > 0 && (
+                        <span className={styles.discountBadge}>
+                          <Percent size={10} /> {actualDiscountPercentage}% Off
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* RIGHT SIDE */}
+        {/* RIGHT COLUMN: DISCOUNTS-AWARE SUMMARY LEDGER */}
         <aside className={styles.summaryCard}>
-          <h4 className="mb-4">Order Summary</h4>
+          <h4 className={styles.summaryTitle}>Operational Manifest</h4>
 
-          <div className="d-flex justify-content-between mb-2">
-            <span className="text-muted">Items</span>
-            <span>{totalItems}</span>
+          <div className={styles.summaryTotals}>
+            <div className={styles.totalLine}>
+              <span>Allocated Line Items</span>
+              <span className="fw-semibold text-dark">{totalItems}</span>
+            </div>
+
+            <div className={styles.totalLine}>
+              <span>Gross Base Subtotal</span>
+              <span>${totalOriginalSubtotal.toFixed(2)}</span>
+            </div>
+
+            {totalDiscountSaved > 0 && (
+              <div className={`${styles.totalLine} ${styles.discountLine}`}>
+                <span className="d-flex align-items-center gap-1">
+                  <Tag size={13} /> Applied Markdowns
+                </span>
+                <span>-${totalDiscountSaved.toFixed(2)}</span>
+              </div>
+            )}
+
+            <div className={styles.totalLine}>
+              <span>VAT Jurisdiction (21%)</span>
+              <span>${vat.toFixed(2)}</span>
+            </div>
+
+            <div className={`${styles.totalLine} ${styles.grandTotal}`}>
+              <span>Total Price</span>
+              <span>${totalPrice.toFixed(2)}</span>
+            </div>
           </div>
 
-          <div className="d-flex justify-content-between mb-2">
-            <span className="text-muted">Subtotal</span>
-            <span>${subtotal.toFixed(2)}</span>
-          </div>
+          <button
+            onClick={() => navigate("/checkout")}
+            className={styles.checkoutBtn}
+          >
+            <span>Proceed to Checkout</span>
+            <ArrowRight size={16} />
+          </button>
 
-          <div className="d-flex justify-content-between mb-2">
-            <span className="text-muted">VAT (21%)</span>
-            <span>${vat.toFixed(2)}</span>
-          </div>
-
-          <hr />
-
-          <div className="d-flex justify-content-between mb-4">
-            <span className="fw-bold">Total</span>
-            <span className="fw-bold">${totalPrice.toFixed(2)}</span>
-          </div>
-
-          <Link to="/checkout" className={styles.checkoutBtn}>
-            Checkout Now
+          <Link to="/shop" className={styles.continueShoppingLink}>
+            ← Continue Exploration
           </Link>
 
-          <Link to="/shop" className="btn btn-link w-100 mt-2 text-muted">
-            ← Continue Shopping
-          </Link>
+          <div className={styles.secureNote}>
+            <ShieldCheck size={14} className="text-success" />
+            <span>Secure Enterprise SSL Transaction Ecosystem</span>
+          </div>
         </aside>
       </div>
     </div>

@@ -4,28 +4,39 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 class Product extends Model implements HasMedia
 {
     use HasFactory, InteractsWithMedia;
+// Add to $fillable
+protected $fillable = [
+    'title',
+    'slug',
+    'short_description',
+    'description',
+    'price',
+    'asset_type',
+    'is_published',
+    'category_id',
+    'user_id',
+    'discount_percentage',
+    'discount_fixed',
+    'discount_starts_at',
+    'discount_ends_at'
+];
 
-    protected $fillable = [
-        'title',
-        'slug',
-        'short_description',
-        'description',
-        'price',
-        'asset_type',
-        'is_published',
-        'category_id',
-        'user_id'
-    ];
-
-    protected $casts = [
-        'is_published' => 'boolean',
-    ];
+// Add to $casts
+protected $casts = [
+    'is_published' => 'boolean',
+    'price' => 'decimal:2',
+    'discount_percentage' => 'decimal:2',
+    'discount_fixed' => 'decimal:2',
+    'discount_starts_at' => 'datetime',
+    'discount_ends_at' => 'datetime',
+];
 
     public function category()
     {
@@ -57,10 +68,111 @@ public function registerMediaCollections(): void
     }
 
     public function wishedByUsers()
-{
+   {
     return $this->belongsToMany(
         User::class,
         'wishlists'
     )->withTimestamps();
+   }
+
+ // ================= DISCOUNT LOGIC (SAFE) =================
+
+public function getFinalPriceAttribute()
+{
+    $price = (float) ($this->attributes['price'] ?? $this->price ?? 0);
+
+    $discountAmount = $this->getActiveDiscountAmount();
+
+    return max(0, round($price - $discountAmount, 2));
 }
+
+public function getEffectiveDiscountPercentageAttribute(): float
+{
+    return $this->getActiveDiscountPercentage();
+}
+
+public function getOldPriceAttribute()
+{
+    return $this->hasActiveDiscount() ? $this->price : null;
+}
+
+public function hasActiveDiscount(): bool
+{
+    return $this->getActiveDiscountPercentage() > 0;
+}
+
+/**
+ * Get active discount percentage (Product > Category)
+ */
+private function getActiveDiscountPercentage(): float
+{
+    // Check if column exists first
+    if (!$this->hasColumn('discount_percentage')) {
+        return 0;
+    }
+
+    // Product discount (priority)
+    if ((float)($this->attributes['discount_percentage'] ?? 0) > 0) {
+        if ($this->isDiscountActive()) {
+            return (float) $this->attributes['discount_percentage'];
+        }
+    }
+
+    // Category discount
+    if ($this->category && method_exists($this->category, 'hasActiveDiscount')) {
+        if ($this->category->hasActiveDiscount()) {
+            return (float) ($this->category->discount_percentage ?? 0);
+        }
+    }
+
+    return 0;
+}
+
+private function getActiveDiscountAmount(): float
+{
+    $price = (float) ($this->attributes['price'] ?? 0);
+    $perc = $this->getActiveDiscountPercentage();
+
+    if ($perc > 0) {
+        return $price * ($perc / 100);
+    }
+
+    // Fixed discount (product only)
+    if ($this->hasColumn('discount_fixed') && (float)($this->attributes['discount_fixed'] ?? 0) > 0) {
+        if ($this->isDiscountActive()) {
+            return (float) $this->attributes['discount_fixed'];
+        }
+    }
+
+    return 0;
+}
+
+private function isDiscountActive(): bool
+{
+    if (!$this->hasColumn('discount_starts_at')) {
+        return true;
+    }
+
+    $now = now();
+
+    if (!empty($this->attributes['discount_starts_at']) && $now->lt($this->attributes['discount_starts_at'])) {
+        return false;
+    }
+
+    if (!empty($this->attributes['discount_ends_at']) && $now->gt($this->attributes['discount_ends_at'])) {
+        return false;
+    }
+
+    return true;
+}
+
+private function hasColumn(string $column): bool
+{
+    try {
+        return Schema::hasColumn($this->getTable(), $column);
+    } catch (\Exception $e) {
+        return false;
+    }
+}
+
 }

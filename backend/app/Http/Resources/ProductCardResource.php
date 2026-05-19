@@ -14,6 +14,9 @@ public function toArray($request)
         'slug' => $this->slug,
         'title' => $this->title,
         'price' => $this->price,
+        'final_price' => $this->final_price ?? $this->price,
+        'old_price' => $this->old_price,
+        'discount_percentage'=> $this->discount_percentage,
         'category' => $this->category?->only(['id', 'name']),
 
         'preview_urls' => $this->whenLoaded('media',
