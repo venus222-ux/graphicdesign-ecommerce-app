@@ -28,15 +28,15 @@ protected $fillable = [
     'discount_ends_at'
 ];
 
-// Add to $casts
 protected $casts = [
-    'is_published' => 'boolean',
-    'price' => 'decimal:2',
-    'discount_percentage' => 'decimal:2',
-    'discount_fixed' => 'decimal:2',
-    'discount_starts_at' => 'datetime',
-    'discount_ends_at' => 'datetime',
+    'is_published'       => 'boolean',
+    'price'              => 'decimal:2',
+    'discount_percentage'=> 'decimal:2',
+    'discount_fixed'     => 'decimal:2',
+    'discount_starts_at' => 'datetime:Y-m-d H:i:s',   // ← use space + seconds
+    'discount_ends_at'   => 'datetime:Y-m-d H:i:s',
 ];
+
 
     public function category()
     {

@@ -121,24 +121,24 @@ const ProductsTab: React.FC = () => {
 
                         {/* 4. DISCOUNT COLUMN */}
                         <td>
-                          {p.discount_percentage ? (
+                          {p.has_discount ? (
                             <div
                               className={`${styles.discountBadge} ${styles.pctBadge}`}
                             >
                               <span className={styles.badgePulse}></span>
-                              {p.discount_percentage}% OFF
-                            </div>
-                          ) : p.discount_fixed ? (
-                            <div
-                              className={`${styles.discountBadge} ${styles.fixedBadge}`}
-                            >
-                              ${Number(p.discount_fixed).toFixed(2)} DROP
+
+                              {p.discount_percentage
+                                ? `${p.discount_percentage}% OFF`
+                                : p.discount_fixed
+                                  ? `$${Number(p.discount_fixed).toFixed(2)} DROP`
+                                  : `${Math.round(
+                                      p.effective_discount_percentage || 0,
+                                    )}% OFF`}
                             </div>
                           ) : (
                             <span className={styles.noDiscount}>—</span>
                           )}
                         </td>
-
                         {/* 5. STATUS */}
                         <td>
                           {p.is_published ? (

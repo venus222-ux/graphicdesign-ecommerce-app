@@ -125,6 +125,8 @@ export interface Product {
   effective_discount_percentage?: number;
   discount_type?: "percent" | "fixed" | null;
   discount_value?: number | null;
+  discount_starts_at?: string | null;
+  discount_ends_at?: string | null;
   has_discount?: boolean;
   is_new?: boolean;
   // PRODUCT
@@ -163,13 +165,17 @@ export interface ProductFormData {
   short_description?: string;
   description?: string;
   price?: number;
+
   discount_percentage?: number | null;
   discount_fixed?: number | null;
-  discount_starts_at?: string;
-  discount_ends_at?: string;
+
+  discount_starts_at?: string | null;
+  discount_ends_at?: string | null;
   asset_type?: string;
   category_id?: number;
+
   is_published: boolean;
+
   preview_images?: File[] | null;
   asset_file?: File | null;
 }

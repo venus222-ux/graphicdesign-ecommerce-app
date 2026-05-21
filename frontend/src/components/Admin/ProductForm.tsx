@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef } from "react";
 import { useAdminStore } from "../../store/useAdminStore";
+import { normalizeDateTimeLocal } from "../../utils/date";
 import {
   FiUpload,
   FiX,
@@ -198,7 +199,31 @@ const ProductForm: React.FC = () => {
                 }
               />
             </div>
+            <div className={productStyles.inputGroup}>
+              <label>Discount Starts</label>
+              <input
+                type="datetime-local"
+                value={productForm.discount_starts_at || ""}
+                onChange={(e) =>
+                  updateProductForm({
+                    discount_starts_at: e.target.value,
+                  })
+                }
+              />
+            </div>
 
+            <div className={productStyles.inputGroup}>
+              <label>Discount Ends</label>
+              <input
+                type="datetime-local"
+                value={productForm.discount_ends_at || ""}
+                onChange={(e) =>
+                  updateProductForm({
+                    discount_ends_at: e.target.value,
+                  })
+                }
+              />
+            </div>
             <div className={productStyles.inputGroup}>
               <label>Discount Fixed (USD)</label>
 
@@ -309,6 +334,20 @@ const ProductForm: React.FC = () => {
               />
               <span>Live on Store</span>
             </label>
+
+            {productForm.discount_starts_at && productForm.discount_ends_at && (
+              <small
+                style={{
+                  display: "block",
+                  marginTop: "10px",
+                  opacity: 0.8,
+                }}
+              >
+                Discount scheduled from{" "}
+                {new Date(productForm.discount_starts_at).toLocaleString()} to{" "}
+                {new Date(productForm.discount_ends_at).toLocaleString()}
+              </small>
+            )}
           </div>
 
           <div className={productStyles.fileGrid}>

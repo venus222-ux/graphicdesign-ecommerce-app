@@ -28,13 +28,10 @@ class ProductResource extends JsonResource
             'discount_percentage'=> $this->discount_percentage,
             'discount_fixed' => $this->discount_fixed,
 
-            'discount_starts_at' => $this->discount_starts_at,
-            'discount_ends_at' => $this->discount_ends_at,
+            'discount_starts_at' => optional($this->discount_starts_at)?->toISOString(),
+            'discount_ends_at'   => optional($this->discount_ends_at)?->toISOString(),
 
-            'has_discount' =>
-              $this->discount_percentage > 0 ||
-              $this->discount_fixed > 0 ||
-             ($this->category?->discount_percentage > 0),
+            'has_discount' => $this->hasActiveDiscount(),
 
             'category_id' => $this->category_id,
 

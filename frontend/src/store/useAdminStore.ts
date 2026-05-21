@@ -2,6 +2,7 @@ import { create } from "zustand";
 import API from "../api";
 import { toast } from "react-toastify";
 import type { OrderFilters } from "../types";
+import { toDateTimeLocal, toBackendDateTime } from "../utils/date";
 import type {
   Category,
   Product,
@@ -294,40 +295,39 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
     try {
       const formData = new FormData();
+
       formData.append("title", productForm.title ?? "");
       formData.append("short_description", productForm.short_description ?? "");
       formData.append("description", productForm.description ?? "");
       formData.append("price", String(productForm.price ?? 0));
-
       formData.append(
         "discount_percentage",
         String(productForm.discount_percentage ?? 0),
       );
 
-      if (productForm.discount_fixed !== null) {
+      if (productForm.discount_fixed != null) {
         formData.append("discount_fixed", String(productForm.discount_fixed));
       }
 
-      if (productForm.discount_starts_at) {
-        formData.append("discount_starts_at", productForm.discount_starts_at);
+      const starts = toBackendDateTime(productForm.discount_starts_at);
+      if (starts) {
+        formData.append("discount_starts_at", starts);
       }
 
-      if (productForm.discount_ends_at) {
-        formData.append("discount_ends_at", productForm.discount_ends_at);
+      const ends = toBackendDateTime(productForm.discount_ends_at);
+      if (ends) {
+        formData.append("discount_ends_at", ends);
       }
-
       formData.append("asset_type", productForm.asset_type ?? "");
       formData.append("category_id", String(productForm.category_id ?? ""));
       formData.append("is_published", productForm.is_published ? "1" : "0");
 
-      // Preview Images
       if (Array.isArray(productForm.preview_images)) {
-        productForm.preview_images.forEach((file) => {
-          formData.append("preview_images[]", file);
-        });
+        productForm.preview_images.forEach((file) =>
+          formData.append("preview_images[]", file),
+        );
       }
 
-      // Asset File
       if (productForm.asset_file instanceof File) {
         formData.append("asset_file", productForm.asset_file);
       }
@@ -335,10 +335,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       const url = editingProduct
         ? `/admin/products/${editingProduct.id}`
         : "/admin/products";
-
-      if (editingProduct) {
-        formData.append("_method", "PUT");
-      }
+      if (editingProduct) formData.append("_method", "PUT");
 
       await API.post(url, formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -346,21 +343,16 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
       toast.success(editingProduct ? "Product updated" : "Product created");
 
-      // Refresh list
       await get().fetchProducts(currentPage, searchTerm);
 
-      // If editing, refresh the editing product with full media
       if (editingProduct) {
         const refreshed = await API.get(`/admin/products/${editingProduct.id}`);
-
-        set({
-          editingProduct: refreshed.data.data ?? refreshed.data,
-        });
+        set({ editingProduct: refreshed.data.data ?? refreshed.data });
       }
 
       get().resetProductForm();
     } catch (error: any) {
-      console.error(error);
+      console.error(error.response?.data);
       toast.error(error.response?.data?.message || "Error saving product");
     }
   },
@@ -522,28 +514,34 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   /* ================= FORM ================= */
   setEditingProduct: (product) => {
-    set({
-      editingProduct: product,
-      productForm: product
-        ? {
-            title: product.title,
-            short_description: product.short_description,
-            description: product.description,
-            price: product.price,
-            discount_percentage: product.discount_percentage ?? 0,
-            discount_fixed: product.discount_fixed ?? null,
-            asset_type: product.asset_type,
-            category_id: product.category_id,
-            is_published: product.is_published,
-            preview_images: null, // important
-            asset_file: null, // ← Changed to null
-          }
-        : {
-            is_published: false,
-            discount_percentage: 0,
-            discount_fixed: null,
-          },
-    });
+    if (product) {
+      set({
+        editingProduct: product,
+        productForm: {
+          title: product.title,
+          price: Number(product.price),
+          discount_percentage: Number(product.discount_percentage),
+          discount_fixed: product.discount_fixed
+            ? Number(product.discount_fixed)
+            : null,
+          category_id: product.category_id,
+          short_description: product.short_description,
+          description: product.description,
+          asset_type: product.asset_type,
+          is_published: !!product.is_published,
+          // Strip down '2026-05-20T10:30:00.000000Z' into '2026-05-20T10:30'
+          discount_starts_at: product.discount_starts_at
+            ? toDateTimeLocal(product.discount_starts_at)
+            : "",
+
+          discount_ends_at: product.discount_ends_at
+            ? toDateTimeLocal(product.discount_ends_at)
+            : "",
+        },
+      });
+    } else {
+      set({ editingProduct: null, productForm: { is_published: false } });
+    }
   },
   updateProductForm: (updates) =>
     set((state) => ({
@@ -552,7 +550,16 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   resetProductForm: () =>
     set({
-      productForm: { is_published: false, preview_images: null },
+      productForm: {
+        is_published: false,
+        preview_images: null,
+
+        discount_percentage: 0,
+        discount_fixed: null,
+
+        discount_starts_at: null,
+        discount_ends_at: null,
+      },
       editingProduct: null,
     }),
 }));
