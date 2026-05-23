@@ -175,4 +175,10 @@ private function hasColumn(string $column): bool
     }
 }
 
+
+public function orders()
+{
+    return $this->hasMany(Order::class);
+}
+
 }

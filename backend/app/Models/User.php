@@ -2,17 +2,14 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Tymon\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
-
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable implements JWTSubject
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles;
 
     /**
@@ -24,13 +21,10 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'email',
         'password',
-
         'company_name',
         'vat_number',
-
         'address_line_1',
         'address_line_2',
-
         'city',
         'state',
         'postal_code',
@@ -56,35 +50,50 @@ class User extends Authenticatable implements JWTSubject
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
     }
 
-   public function getJWTIdentifier() {
+    public function getJWTIdentifier()
+    {
         return $this->getKey();
     }
-    public function getJWTCustomClaims() {
+
+    public function getJWTCustomClaims()
+    {
         return [
-            'role' => $this->getRoleNames()->first()
+            'role' => $this->getRoleNames()->first(),
         ];
     }
 
-
-
     public function orders()
-{
-    return $this->hasMany(Order::class);
-}
+    {
+        return $this->hasMany(Order::class);
+    }
 
+    public function products()
+    {
+        return $this->belongsToMany(
+            Product::class,
+            'order_items',
+            'user_id',
+            'product_id'
+        )->withPivot('quantity', 'price');
+    }
 
-public function wishlistProducts()
-{
-    return $this->belongsToMany(
-        \App\Models\Product::class,
-        'wishlists',
-        'user_id',
-        'product_id'
-    );
-}
+    public function wishlistProducts()
+    {
+        return $this->belongsToMany(
+            Product::class,
+            'wishlists',
+            'user_id',
+            'product_id'
+        );
+    }
 
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role ||
+               $this->getRoleNames()->contains($role);
+    }
 }

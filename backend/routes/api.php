@@ -15,7 +15,13 @@ use App\Http\Controllers\Product\PublicProductController;
 use App\Http\Controllers\Product\CategoryController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\WishlistController;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
+
+
+
+Broadcast::routes(['middleware' => ['auth:api']]);
+
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -26,6 +32,9 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])
 Route::post('/refresh', [AuthController::class, 'refresh']);
 
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
+
+
+
 
 // Protected routes with auth + throttle
 Route::middleware(['jwt.auth'])->group(function () {
@@ -48,6 +57,8 @@ Route::middleware(['jwt.auth'])->group(function () {
     Route::get('/orders/{id}/invoice', [OrderController::class, 'invoice']);
 
     Route::get('/products/{product}/download', [DownloadController::class, 'download']);
+
+    Route::get('/user/interested-products', [AuthController::class, 'interestedProducts']);
 
 });
 

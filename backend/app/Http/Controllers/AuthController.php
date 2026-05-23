@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Services\ActivityLogger;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -201,14 +202,14 @@ class AuthController extends Controller
     }
 
     public function profile()
-{
-    $user = JWTAuth::parseToken()->authenticate();
+    {
+      $user = JWTAuth::parseToken()->authenticate();
 
-    return new UserResource($user);
-}
+      return new UserResource($user);
+    }
 
-public function updateProfile(UpdateProfileRequest $request)
-{
+    public function updateProfile(UpdateProfileRequest $request)
+    {
     $user = JWTAuth::parseToken()->authenticate();
 
     $data = $request->only([
@@ -238,7 +239,7 @@ public function updateProfile(UpdateProfileRequest $request)
         'message' => 'Profile updated',
         'user' => $user->fresh(),
     ]);
-}
+    }
 
     public function destroyProfile()
     {
@@ -250,29 +251,29 @@ public function updateProfile(UpdateProfileRequest $request)
 
     // ================= PASSWORD RESET =================
 
- public function forgotPassword(Request $request)
-{
-    $request->validate(['email' => 'required|email|exists:users,email']);
+    public function forgotPassword(Request $request)
+    {
+     $request->validate(['email' => 'required|email|exists:users,email']);
 
-    $token = Str::random(64);
+     $token = Str::random(64);
 
-    DB::table('password_resets')->updateOrInsert(
+     DB::table('password_resets')->updateOrInsert(
         ['email' => $request->email],
         [
             'token' => hash('sha256', $token),
             'created_at' => now()
         ]
-    );
+      );
 
-    $user = User::where('email', $request->email)->first();
+       $user = User::where('email', $request->email)->first();
 
-    event(new PasswordResetRequested($user, $token));
+       event(new PasswordResetRequested($user, $token));
 
-    return response()->json(['message' => 'Reset link sent']);
-}
+       return response()->json(['message' => 'Reset link sent']);
+    }
 
-  public function resetPassword(ResetPasswordRequest $request)
-{
+   public function resetPassword(ResetPasswordRequest $request)
+   {
     $data = $request->validated();
 
     $hashedToken = hash('sha256', $data['token']);
@@ -301,5 +302,44 @@ public function updateProfile(UpdateProfileRequest $request)
         ->delete();
 
     return response()->json(['message' => 'Password reset success']);
+   }
+
+
+//subscribing only to products the user has bought.
+public function interestedProducts()
+{
+    try {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json(['product_ids' => []]);
+        }
+
+        // Correct way: Go through orders -> order_items
+        $purchasedIds = DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('orders.user_id', $user->id)
+            ->where('order_items.quantity', '>', 0)
+            ->pluck('order_items.product_id')
+            ->unique();
+
+        // Optional: Wishlist (if you want to include)
+        $wishlistedIds = $user->wishlistProducts()->pluck('product_id');
+
+        $productIds = $purchasedIds->merge($wishlistedIds)->unique()->values();
+
+        Log::info("User {$user->id} purchased products: " . $purchasedIds->implode(','));
+
+        return response()->json([
+            'product_ids' => $productIds
+        ]);
+
+    } catch (\Throwable $e) {
+        Log::error('interestedProducts failed: ' . $e->getMessage());
+        return response()->json([
+            'product_ids' => [],
+            'error' => $e->getMessage()
+        ], 500);
+    }
 }
 }

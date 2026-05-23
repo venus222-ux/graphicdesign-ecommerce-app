@@ -224,3 +224,63 @@
 .dropdownItem:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+.notificationWrapper {
+  position: relative;
+}
+
+.notificationBtn {
+  position: relative;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+.notificationBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: red;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  padding: 2px 6px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.notificationDropdown {
+  position: absolute;
+  right: 0;
+  top: 40px;
+  width: 320px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  z-index: 9999;
+}
+
+.notificationHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.notificationItem {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.notificationItem p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.notificationEmpty {
+  text-align: center;
+  padding: 20px;
+  opacity: 0.7;
+}
