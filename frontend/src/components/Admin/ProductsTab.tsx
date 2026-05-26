@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useAdminStore } from "../../store/useAdminStore";
-import styles from "../../styles/AdminDashboard.module.css";
 import DashboardCharts from "./DashboardCharts";
 import ProductForm from "./ProductForm";
+import styles from "../../styles/AdminDashboard.module.css";
 import {
   Plus,
   Edit3,
@@ -15,6 +15,8 @@ import {
 
 const ProductsTab: React.FC = () => {
   const {
+    fetchDashboardStats,
+    dashboardStats,
     products,
     pagination,
     isLoadingProducts,
@@ -26,6 +28,11 @@ const ProductsTab: React.FC = () => {
     deleteProduct,
   } = useAdminStore();
 
+  useEffect(() => {
+    fetchDashboardStats();
+    fetchProducts(currentPage); // Fetch initial page
+  }, []);
+
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || (pagination && newPage > pagination.last_page)) return;
 
@@ -34,12 +41,60 @@ const ProductsTab: React.FC = () => {
   };
 
   return (
-    <>
-      <DashboardCharts products={products} />
+    <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
+      {/* LEFT COLUMN: KPIs, Charts, and Product Table */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          gap: "24px",
+        }}
+      >
+        {/* KPI CARDS GRID */}
+        {dashboardStats && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "16px",
+            }}
+          >
+            <KpiCard
+              title="Today's Revenue"
+              value={`$${dashboardStats.kpis.today_revenue}`}
+            />
+            <KpiCard
+              title="This Month"
+              value={`$${dashboardStats.kpis.month_revenue}`}
+            />
+            <KpiCard title="Orders" value={dashboardStats.kpis.total_orders} />
+            <KpiCard
+              title="Pending Orders"
+              value={dashboardStats.kpis.pending_orders}
+              highlight="orange"
+            />
+            <KpiCard
+              title="Refunds"
+              value={dashboardStats.kpis.refunds}
+              highlight="red"
+            />
+            <KpiCard title="New Users" value={dashboardStats.kpis.new_users} />
+            <KpiCard title="AOV" value={`$${dashboardStats.kpis.aov}`} />
+            <KpiCard
+              title="Conversion Rate"
+              value={`${dashboardStats.kpis.conversion_rate}%`}
+            />
+          </div>
+        )}
 
-      <div className={styles.dashboardGrid}>
+        {/* CHARTS */}
+        <DashboardCharts stats={dashboardStats} />
+
+        {/* ADVANCED PRODUCTS TABLE */}
         <div className={styles.inventorySection}>
           <div className={styles.glassCard}>
+            {/* Table Header & Add Button */}
             <div className={styles.cardHeader}>
               <div className={styles.headerInfo}>
                 <h3>Product List</h3>
@@ -61,6 +116,7 @@ const ProductsTab: React.FC = () => {
               </button>
             </div>
 
+            {/* Table Area */}
             <div className={styles.tableArea}>
               {isLoadingProducts ? (
                 <div className={styles.skeletonLoader}>
@@ -126,7 +182,6 @@ const ProductsTab: React.FC = () => {
                               className={`${styles.discountBadge} ${styles.pctBadge}`}
                             >
                               <span className={styles.badgePulse}></span>
-
                               {p.discount_percentage
                                 ? `${p.discount_percentage}% OFF`
                                 : p.discount_fixed
@@ -139,6 +194,7 @@ const ProductsTab: React.FC = () => {
                             <span className={styles.noDiscount}>—</span>
                           )}
                         </td>
+
                         {/* 5. STATUS */}
                         <td>
                           {p.is_published ? (
@@ -212,14 +268,47 @@ const ProductsTab: React.FC = () => {
             )}
           </div>
         </div>
-
-        {/* RIGHT SIDEBAR */}
-        <aside className={styles.sideControls}>
-          <ProductForm />
-        </aside>
       </div>
-    </>
+
+      {/* RIGHT COLUMN: Product Form (Sticky) */}
+      <div
+        style={{
+          width: "380px",
+          flexShrink: 0,
+          position: "sticky",
+          top: "24px",
+        }}
+      >
+        <div className={styles.glassCard}>
+          <ProductForm />
+        </div>
+      </div>
+    </div>
   );
 };
+
+// Simple reusable KPI component
+const KpiCard = ({
+  title,
+  value,
+  highlight,
+}: {
+  title: string;
+  value: string | number;
+  highlight?: string;
+}) => (
+  <div
+    className={styles.glassCard}
+    style={{
+      padding: "16px",
+      borderLeft: highlight ? `4px solid ${highlight}` : "none",
+    }}
+  >
+    <p style={{ margin: 0, fontSize: "14px", color: "#6b7280" }}>{title}</p>
+    <h3 style={{ margin: "8px 0 0 0", fontSize: "24px", fontWeight: "bold" }}>
+      {value}
+    </h3>
+  </div>
+);
 
 export default ProductsTab;

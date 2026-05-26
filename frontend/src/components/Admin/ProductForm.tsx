@@ -218,7 +218,7 @@ const ProductForm: React.FC = () => {
                 value={productForm.discount_ends_at || ""}
                 onChange={(e) =>
                   updateProductForm({
-                    discount_ends_at: e.target.value,
+                    discount_ends_at: e.target.value || null, // Allow clearing
                   })
                 }
               />

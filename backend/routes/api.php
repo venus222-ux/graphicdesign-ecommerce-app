@@ -93,7 +93,7 @@ Route::prefix('admin')->middleware(['jwt.auth', 'role:admin'])->group(function (
     Route::get('/orders', [AdminController::class, 'orders']);
     Route::get('/orders/{id}', [OrderController::class, 'adminShow']);        // ← Add this
     Route::get('/orders/{id}/invoice', [OrderController::class, 'adminInvoice']);
-
+Route::get('/dashboard-stats', [AdminController::class, 'dashboardStats']);
 });
 
 

@@ -3,6 +3,7 @@ import API from "../api";
 import { toast } from "react-toastify";
 import type { OrderFilters } from "../types";
 import { toDateTimeLocal, toBackendDateTime } from "../utils/date";
+
 import type {
   Category,
   Product,
@@ -19,6 +20,9 @@ interface AdminState {
   users: any[];
   orders: any[];
   refunds: any[];
+
+  /* ================= DASHBOARD ================= */
+  dashboardStats: any | null;
 
   /* ================= PAGINATION ================= */
   pagination: PaginationMeta | null;
@@ -42,6 +46,9 @@ interface AdminState {
   productForm: ProductFormData;
   editingProduct: Product | null;
 
+  /* ================= DASHBOARD ================= */
+  fetchDashboardStats: () => Promise<void>;
+
   /* ================= USERS ================= */
   setUsers: (users: any[]) => void;
   fetchUsers: () => Promise<void>;
@@ -57,6 +64,7 @@ interface AdminState {
   createOrUpdateProduct: () => Promise<void>;
   deleteProduct: (id: number) => Promise<void>;
   deletePreviewImage: (productId: number, mediaId: number) => Promise<void>;
+
   /* ================= LOGS ================= */
   fetchLogs: (page?: number, search?: string) => Promise<void>;
   deleteLog: (id: string) => Promise<void>;
@@ -102,6 +110,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   orders: [],
   refunds: [],
 
+  /* ================= DASHBOARD ================= */
+  dashboardStats: null,
+
   pagination: null,
   paginationLogs: null,
 
@@ -126,6 +137,20 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   setSelectedOrder: (o) => set({ selectedOrder: o }),
 
+  /* ================= DASHBOARD ================= */
+  fetchDashboardStats: async () => {
+    try {
+      const res = await API.get("/admin/dashboard-stats");
+
+      set({
+        dashboardStats: res.data,
+      });
+    } catch (err) {
+      console.error("Failed to fetch dashboard stats", err);
+      toast.error("Failed to fetch dashboard stats");
+    }
+  },
+
   /* ================= USER ORDERS ================= */
   fetchOrders: async (page = 1, filters = {}) => {
     try {
@@ -135,6 +160,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
           ...filters,
         },
       });
+
       set({
         orders: res.data.data ?? res.data.orders ?? res.data ?? [],
       });
@@ -149,17 +175,20 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       const res = await API.get(`/admin/orders/${id}`);
       set({ selectedOrder: res.data });
+
       return res.data;
     } catch (err: any) {
       console.error(err);
+
       toast.error(
         err.response?.data?.message || "Failed to fetch order details",
       );
+
       throw err;
     }
   },
 
-  /* ================= INVOICE DOWNLOAD (ADMIN + USER SAFE) ================= */
+  /* ================= INVOICE DOWNLOAD ================= */
   downloadInvoice: async (orderId: number) => {
     try {
       const res = await API.get(`/admin/orders/${orderId}/invoice`, {
@@ -173,6 +202,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       link.download = `invoice-${orderId}.pdf`;
 
       document.body.appendChild(link);
+
       link.click();
       link.remove();
 
@@ -191,7 +221,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   fetchUsers: async () => {
     try {
       const res = await API.get("/admin/users");
-      set({ users: res.data || [] });
+
+      set({
+        users: res.data || [],
+      });
     } catch {
       toast.error("Failed to fetch users");
     }
@@ -202,9 +235,11 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
     try {
       await API.delete(`/admin/users/${id}`);
+
       set((state) => ({
         users: state.users.filter((u) => u.id !== id),
       }));
+
       toast.success("User deleted");
     } catch {
       toast.error("Delete failed");
@@ -217,7 +252,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
     try {
       const res = await API.get("/admin/categories");
-      set({ categories: res.data || [] });
+
+      set({
+        categories: res.data || [],
+      });
     } catch {
       toast.error("Failed to fetch categories");
     } finally {
@@ -270,6 +308,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
       set({
         products: res.data.data || [],
+
         pagination: res.data.current_page
           ? {
               current_page: res.data.current_page,
@@ -280,11 +319,16 @@ export const useAdminStore = create<AdminState>((set, get) => ({
               to: res.data.to,
             }
           : null,
+
         currentPage: res.data.current_page || 1,
       });
     } catch {
       toast.error("Failed to fetch products");
-      set({ products: [], pagination: null });
+
+      set({
+        products: [],
+        pagination: null,
+      });
     } finally {
       set({ isLoadingProducts: false });
     }
@@ -298,8 +342,11 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
       formData.append("title", productForm.title ?? "");
       formData.append("short_description", productForm.short_description ?? "");
+
       formData.append("description", productForm.description ?? "");
+
       formData.append("price", String(productForm.price ?? 0));
+
       formData.append(
         "discount_percentage",
         String(productForm.discount_percentage ?? 0),
@@ -310,16 +357,21 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       }
 
       const starts = toBackendDateTime(productForm.discount_starts_at);
+
       if (starts) {
         formData.append("discount_starts_at", starts);
       }
 
       const ends = toBackendDateTime(productForm.discount_ends_at);
+
       if (ends) {
         formData.append("discount_ends_at", ends);
       }
+
       formData.append("asset_type", productForm.asset_type ?? "");
+
       formData.append("category_id", String(productForm.category_id ?? ""));
+
       formData.append("is_published", productForm.is_published ? "1" : "0");
 
       if (Array.isArray(productForm.preview_images)) {
@@ -335,10 +387,15 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       const url = editingProduct
         ? `/admin/products/${editingProduct.id}`
         : "/admin/products";
-      if (editingProduct) formData.append("_method", "PUT");
+
+      if (editingProduct) {
+        formData.append("_method", "PUT");
+      }
 
       await API.post(url, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
 
       toast.success(editingProduct ? "Product updated" : "Product created");
@@ -347,18 +404,24 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
       if (editingProduct) {
         const refreshed = await API.get(`/admin/products/${editingProduct.id}`);
-        set({ editingProduct: refreshed.data.data ?? refreshed.data });
+
+        set({
+          editingProduct: refreshed.data.data ?? refreshed.data,
+        });
       }
 
       get().resetProductForm();
     } catch (error: any) {
       console.error(error.response?.data);
+
       toast.error(error.response?.data?.message || "Error saving product");
     }
   },
+
   deletePreviewImage: async (productId: number, mediaId: number) => {
     try {
       await API.delete(`/admin/products/${productId}/media/${mediaId}`);
+
       toast.success("Image deleted");
 
       const res = await API.get(`/admin/products/${productId}`);
@@ -370,12 +433,15 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       toast.error(err.response?.data?.message || "Failed to delete image");
     }
   },
+
   deleteProduct: async (id: number) => {
     if (!window.confirm("Delete this product?")) return;
 
     try {
       await API.delete(`/admin/products/${id}`);
+
       toast.success("Product deleted");
+
       await get().fetchProducts(get().currentPage, get().searchTerm);
     } catch {
       toast.error("Delete failed");
@@ -397,6 +463,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
       set({
         logs: res.data.data || [],
+
         paginationLogs: res.data.current_page
           ? {
               current_page: res.data.current_page,
@@ -407,6 +474,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
               to: res.data.to,
             }
           : null,
+
         currentPageLogs: res.data.current_page || 1,
       });
     } catch {
@@ -421,7 +489,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
     try {
       await API.delete(`/admin/logs/${id}`);
+
       toast.success("Log deleted");
+
       get().fetchLogs(get().currentPageLogs, get().searchTerm);
     } catch {
       toast.error("Delete failed");
@@ -435,12 +505,15 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       });
 
       const url = window.URL.createObjectURL(new Blob([res.data]));
+
       const link = document.createElement("a");
 
       link.href = url;
+
       link.download = `logs_${new Date().toISOString().slice(0, 10)}.csv`;
 
       document.body.appendChild(link);
+
       link.click();
       link.remove();
 
@@ -454,7 +527,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   fetchRefunds: async () => {
     try {
       const res = await API.get("/admin/refunds");
-      set({ refunds: res.data?.data || res.data || [] });
+
+      set({
+        refunds: res.data?.data || res.data || [],
+      });
     } catch {
       console.warn("Refunds not ready yet");
     }
@@ -475,6 +551,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       return res.data;
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Refund failed");
+
       throw err;
     }
   },
@@ -493,17 +570,22 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   /* ================= PAGINATION ================= */
   setCurrentPage: (page) => {
     set({ currentPage: page });
+
     get().fetchProducts(page, get().searchTerm);
   },
 
   setCurrentPageLogs: (page) => {
     set({ currentPageLogs: page });
+
     get().fetchLogs(page, get().searchTerm);
   },
 
   /* ================= TAB ================= */
   setActiveTab: (tab) => {
-    set({ activeTab: tab, searchTerm: "" });
+    set({
+      activeTab: tab,
+      searchTerm: "",
+    });
 
     if (tab === "logs") {
       get().fetchLogs(1);
@@ -517,19 +599,27 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     if (product) {
       set({
         editingProduct: product,
+
         productForm: {
           title: product.title,
           price: Number(product.price),
-          discount_percentage: Number(product.discount_percentage),
+
+          discount_percentage: Number(product.discount_percentage ?? 0),
+
           discount_fixed: product.discount_fixed
             ? Number(product.discount_fixed)
             : null,
+
           category_id: product.category_id,
+
           short_description: product.short_description,
+
           description: product.description,
+
           asset_type: product.asset_type,
+
           is_published: !!product.is_published,
-          // Strip down '2026-05-20T10:30:00.000000Z' into '2026-05-20T10:30'
+
           discount_starts_at: product.discount_starts_at
             ? toDateTimeLocal(product.discount_starts_at)
             : "",
@@ -540,26 +630,48 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         },
       });
     } else {
-      set({ editingProduct: null, productForm: { is_published: false } });
+      set({
+        editingProduct: null,
+
+        productForm: {
+          is_published: false,
+
+          discount_percentage: 0,
+
+          discount_fixed: null,
+
+          discount_starts_at: "",
+
+          discount_ends_at: "",
+        },
+      });
     }
   },
+
   updateProductForm: (updates) =>
     set((state) => ({
-      productForm: { ...state.productForm, ...updates },
+      productForm: {
+        ...state.productForm,
+        ...updates,
+      },
     })),
 
   resetProductForm: () =>
     set({
       productForm: {
         is_published: false,
+
         preview_images: null,
 
         discount_percentage: 0,
+
         discount_fixed: null,
 
         discount_starts_at: null,
+
         discount_ends_at: null,
       },
+
       editingProduct: null,
     }),
 }));
