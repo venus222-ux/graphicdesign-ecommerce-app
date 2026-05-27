@@ -90,7 +90,7 @@ const FiltersSidebar = () => {
       <div className={styles.section}>
         <label className={styles.label}>Asset Type</label>
         <div className={styles.pillContainer}>
-          {["file", "course"].map((type) => (
+          {["Premium", "Free"].map((type) => (
             <button
               key={type}
               type="button"
@@ -99,7 +99,7 @@ const FiltersSidebar = () => {
                 setFilters({ assetType: assetType === type ? null : type })
               }
             >
-              {type.charAt(0).toUpperCase() + type.slice(1)}
+              {type}
             </button>
           ))}
         </div>

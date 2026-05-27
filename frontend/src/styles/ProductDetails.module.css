@@ -1,90 +1,131 @@
 /* ==========================================================================
-   Premium Product Detail Layout System Styles
+   Minimal Luxury Product Details — Matching Navbar / Cart / Wishlist Style
    ========================================================================== */
 
 .pageWrapper {
-  background-color: #f8fafc;
+  background: #ffffff;
   min-height: 100vh;
-  color: #0f172a;
+  color: #000;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  padding: 2rem 0 5rem;
+}
+
+/* --------------------------------------------------------------------------
+   Breadcrumbs
+   -------------------------------------------------------------------------- */
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2rem;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.breadcrumb a {
+  color: #999;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.breadcrumb a:hover {
+  color: #000;
 }
 
 .breadcrumbActive {
-  color: #6366f1;
+  color: #cca4c4;
+  font-weight: 700;
 }
 
-/* Image Presentation Core Engine */
+/* --------------------------------------------------------------------------
+   Main Gallery
+   -------------------------------------------------------------------------- */
+
 .mainImageWrapper {
-  position: relative;
   width: 100%;
 }
 
 .featuredImageContainer {
   position: relative;
-  aspect-ratio: 16 / 10;
-  background: #ffffff;
-  border-radius: 20px;
+  aspect-ratio: 1 / 1;
+  background: #fafafa;
+  border: 1px solid #ececec;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.02);
 }
 
 .mainDisplayImage {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 1rem;
-  background: #ffffff;
+  padding: 2rem;
+  transition: transform 0.4s ease;
 }
 
-/* Carousel Control Interfaces */
+.featuredImageContainer:hover .mainDisplayImage {
+  transform: scale(1.02);
+}
+
+/* --------------------------------------------------------------------------
+   Gallery Navigation
+   -------------------------------------------------------------------------- */
+
 .navBtnPrev,
 .navBtnNext {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  font-size: 24px;
+  width: 46px;
+  height: 46px;
+  border: 1px solid #ececec;
+  background: rgba(255, 255, 255, 0.95);
+  color: #000;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
-  cursor: pointer;
-  color: #0f172a;
-  transition: all 0.2s ease;
+  font-size: 1.4rem;
+  transition: all 0.25s ease;
   z-index: 10;
 }
 
 .navBtnPrev:hover,
 .navBtnNext:hover {
-  background: #0f172a;
-  color: #ffffff;
-  border-color: #0f172a;
+  background: #000;
+  color: #fff;
 }
 
 .navBtnPrev {
   left: 20px;
 }
+
 .navBtnNext {
   right: 20px;
 }
 
-/* Carousel Thumbnails Grid */
+/* --------------------------------------------------------------------------
+   Thumbnails
+   -------------------------------------------------------------------------- */
+
+.thumbRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 1rem;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
 .thumb {
   width: 90px;
-  height: 64px;
+  height: 90px;
   object-fit: cover;
-  border-radius: 10px;
+  border: 1px solid #ececec;
   cursor: pointer;
   opacity: 0.5;
   transition: all 0.25s ease;
-  border: 2px solid transparent;
-  background: #ffffff;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  background: #fff;
 }
 
 .thumb:hover {
@@ -92,128 +133,371 @@
 }
 
 .thumbActive {
-  opacity: 1 !important;
-  border-color: #6366f1;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+  opacity: 1;
+  border-color: #000;
 }
 
-.noImagePlaceholder {
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  background: #f1f5f9;
-  border-radius: 20px;
+/* --------------------------------------------------------------------------
+   Product Info
+   -------------------------------------------------------------------------- */
+
+.infoPanel {
+  position: sticky;
+  top: 6rem;
+}
+
+.badgeRow {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #94a3b8;
-  font-weight: 500;
-  border: 2px dashed #cbd5e1;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 1.5rem;
 }
 
-/* Status Pill Indicators */
 .assetTypeBadge {
-  background: rgba(99, 102, 241, 0.08);
-  color: #6366f1;
+  border: 1px solid #ececec;
+  color: #666;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.05em;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  padding: 6px 14px;
-  border-radius: 30px;
-  border: 1px solid rgba(99, 102, 241, 0.12);
 }
 
 .saleBadge {
-  background: #ef4444;
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.03em;
-  padding: 6px 14px;
-  border-radius: 30px;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
-}
-
-/* Commercial Point-Of-Sale Terminal Card */
-.purchaseCard {
-  background: #ffffff;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 16px !important;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.03) !important;
-}
-
-.letter-spacing-glance {
-  letter-spacing: 0.08em;
+  background: #000;
+  color: #fff;
+  padding: 0.45rem 0.9rem;
   font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
 }
 
-.defaultPrice {
-  color: #0f172a;
+/* --------------------------------------------------------------------------
+   Title & Description
+   -------------------------------------------------------------------------- */
+
+.productTitle {
+  font-size: 2.4rem;
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+  color: #000;
+  text-transform: uppercase;
+}
+
+.shortDescription {
+  color: #777;
+  font-size: 1rem;
+  line-height: 1.8;
+  margin-bottom: 2rem;
+}
+
+/* --------------------------------------------------------------------------
+   Purchase Card
+   -------------------------------------------------------------------------- */
+
+.purchaseCard {
+  border: 1px solid #ececec;
+  background: #fff;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.pricingLabel {
+  font-size: 0.72rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.priceRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 2rem;
+}
+
+.defaultPrice,
+.activeDiscountPrice {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #000;
 }
 
 .activeDiscountPrice {
-  color: #22c55e; /* Productive conversion green */
+  color: #cca4c4;
 }
 
 .strikeThroughPrice {
+  color: #999;
   text-decoration: line-through;
-  color: #94a3b8;
-  font-size: 1.25rem;
-  font-weight: 500;
+  font-size: 1.1rem;
 }
 
+/* --------------------------------------------------------------------------
+   Add To Cart
+   -------------------------------------------------------------------------- */
+
 .addToCartBtn {
-  background: #0f172a;
-  color: #ffffff;
+  width: 100%;
+  background: #000;
+  color: #fff;
   border: none;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s ease;
 }
 
 .addToCartBtn:hover {
-  background: #6366f1;
-  color: #ffffff;
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.2);
+  background: #cca4c4;
+  color: #fff;
 }
 
-.addToCartBtn:active {
-  transform: translateY(1px);
+/* --------------------------------------------------------------------------
+   Security Row
+   -------------------------------------------------------------------------- */
+
+.securityRow {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  border-top: 1px solid #ececec;
+  padding-top: 1rem;
+  margin-top: 1.2rem;
+  color: #888;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
 }
 
-.border-top-dashed {
-  border-top: 1px dashed #e2e8f0;
+.securityItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-/* Metadata Profile Attributes boxes */
+/* --------------------------------------------------------------------------
+   Meta Boxes
+   -------------------------------------------------------------------------- */
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
 .metaBox {
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.01);
+  border: 1px solid #ececec;
+  padding: 1rem;
+  background: #fff;
 }
 
-/* Detailed Information Container Modules */
+.metaLabel {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 0.45rem;
+}
+
+.metaValue {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #000;
+}
+
+/* --------------------------------------------------------------------------
+   Description Section
+   -------------------------------------------------------------------------- */
+
 .descriptionCard {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.01);
+  margin-top: 5rem;
+  border-top: 1px solid #ececec;
+  padding-top: 3rem;
+}
+
+.descriptionTitle {
+  font-size: 1.4rem;
+  font-weight: 300;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
 }
 
 .descriptionBody {
-  line-height: 1.75;
+  line-height: 1.9;
+  color: #666;
+  font-size: 0.97rem;
   white-space: pre-line;
-  font-size: 0.975rem;
-  color: #475569 !important;
+}
+
+/* --------------------------------------------------------------------------
+   Related Products
+   -------------------------------------------------------------------------- */
+
+.relatedSection {
+  margin-top: 6rem;
+  padding-top: 3rem;
+  border-top: 1px solid #ececec;
+}
+
+.relatedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.relatedTitle {
+  font-size: 1.5rem;
+  font-weight: 300;
+  letter-spacing: 2px;
+  text-transform: uppercase;
 }
 
 .viewAllLink {
-  color: #6366f1;
-  transition: color 0.2s;
+  color: #999;
+  text-decoration: none;
+  font-size: 0.78rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: color 0.2s ease;
 }
 
 .viewAllLink:hover {
-  color: #4f46e5;
+  color: #cca4c4;
 }
 
-/* System State Layout Helpers */
-.min-vh-50 {
-  min-height: 50vh;
+/* --------------------------------------------------------------------------
+   Empty Image State
+   -------------------------------------------------------------------------- */
+
+.noImagePlaceholder {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border: 1px dashed #ddd;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+/* --------------------------------------------------------------------------
+   Loading / Error States
+   -------------------------------------------------------------------------- */
+
+.stateWrapper {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stateCard {
+  text-align: center;
+  border: 1px solid #ececec;
+  padding: 4rem 3rem;
+  max-width: 520px;
+  background: #fff;
+}
+
+.stateTitle {
+  font-size: 1.5rem;
+  font-weight: 300;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin: 1rem 0;
+}
+
+.stateText {
+  color: #777;
+  margin-bottom: 2rem;
+}
+
+.returnBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+  padding: 1rem 2rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  transition: all 0.25s ease;
+}
+
+.returnBtn:hover {
+  background: #cca4c4;
+  color: #fff;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 992px) {
+  .infoPanel {
+    position: static;
+    margin-top: 3rem;
+  }
+
+  .productTitle {
+    font-size: 2rem;
+  }
+
+  .relatedHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .pageWrapper {
+    padding-top: 1rem;
+  }
+
+  .productTitle {
+    font-size: 1.6rem;
+  }
+
+  .metaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .securityRow {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .thumb {
+    width: 74px;
+    height: 74px;
+  }
+
+  .purchaseCard {
+    padding: 1.5rem;
+  }
+
+  .defaultPrice,
+  .activeDiscountPrice {
+    font-size: 1.8rem;
+  }
 }

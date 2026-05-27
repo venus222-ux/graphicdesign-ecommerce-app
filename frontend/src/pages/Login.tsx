@@ -8,6 +8,8 @@ import styles from "./Login.module.css";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
   const { setAuth, startTokenRefreshLoop, isAuth, role, initialized } =
@@ -15,6 +17,7 @@ export default function Login() {
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
       const res = await login({ email, password });
@@ -25,27 +28,36 @@ export default function Login() {
 
       toast.success("Welcome back! 👋");
     } catch (err: any) {
-      console.error(err);
       toast.error(err.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 🔥 Redirect după login / restore
   useEffect(() => {
-    if (!initialized) return; // așteaptă restore
+    if (!initialized) return;
     if (!isAuth) return;
 
     navigate(role === "admin" ? "/admin/dashboard" : "/dashboard");
   }, [isAuth, role, initialized, navigate]);
 
-  if (!initialized) return <div>Loading...</div>;
+  if (!initialized) {
+    return (
+      <div className={styles.loadingScreen}>
+        <div className={styles.spinner} />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.wrapper}>
       <div className={styles.card}>
-        <h2 className={styles.title}>
-          <span>🔐</span> Sign In
-        </h2>
+        <div className={styles.header}>
+          <h2 className={styles.title}>
+            <span>🔐</span> Welcome back
+          </h2>
+          <p className={styles.subtitle}>Sign in to continue to your account</p>
+        </div>
 
         <form onSubmit={handleLogin}>
           <div className={styles.formGroup}>
@@ -56,7 +68,6 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value.trim())}
               required
-              autoFocus
               autoComplete="email"
             />
           </div>
@@ -73,8 +84,8 @@ export default function Login() {
             />
           </div>
 
-          <button type="submit" className={styles.btn}>
-            Log In
+          <button className={styles.btn} type="submit" disabled={loading}>
+            {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 

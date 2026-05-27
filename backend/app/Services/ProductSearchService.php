@@ -18,20 +18,25 @@ public function __construct()
 
 public function index(Product $product)
 {
-    try {
+try {
         return $this->client->index([
             'index' => config('services.elasticsearch.index'),
             'id'    => $product->id,
             'body'  => [
-                'title'          => $product->title,
-                'slug'           => $product->slug,
-                'description'    => $product->description,
+                'title'             => $product->title,
+                'id' => $product->id,
+                'slug'              => $product->slug,
+                'description'       => $product->description,
                 'short_description' => $product->short_description ?? null,
-                'price'          => $product->price,
-                'category_id'    => $product->category_id,
-                'category_name'  => $product->category?->name,
-                'asset_type'     => $product->asset_type,
-                'created_at'     => $product->created_at,
+                'price'             => $product->price,
+                'category_id'       => $product->category_id,
+                'category_name'     => $product->category?->name,
+                'asset_type'        => $product->asset_type,
+                'created_at'        => $product->created_at,
+
+                // 👇 ADD THESE TWO LINES 👇
+                'preview_url'       => $product->preview_url,
+                'preview_urls'      => $product->preview_urls,
             ],
         ]);
     } catch (\Exception $e) {
@@ -123,7 +128,7 @@ public function delete(int $id): void
     }
 }
 
-    public function bulkIndex($products)
+  public function bulkIndex($products)
 {
     $params = ['body' => []];
 
@@ -136,17 +141,23 @@ public function delete(int $id): void
         ];
 
         $params['body'][] = [
-            'title' => $product->title,
-            'slug'  => $product->slug,
-            'description' => $product->description,
-            'price' => $product->price,
-            'category_id' => $product->category_id,
-            'asset_type' => $product->asset_type,
+            'title'             => $product->title,
+            'id' => $product->id,
+            'slug'              => $product->slug,
+            'description'       => $product->description,
+            'price'             => $product->price,
+            'category_id'       => $product->category_id,
+            'asset_type'        => $product->asset_type,
+
+            // 👇 ADD THESE TWO LINES HERE AS WELL 👇
+            'preview_url'       => $product->preview_url,
+            'preview_urls'      => $product->preview_urls,
         ];
     }
 
     return $this->client->bulk($params);
 }
+
 }
 
 

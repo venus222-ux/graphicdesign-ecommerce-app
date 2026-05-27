@@ -2,7 +2,6 @@ import { useState, FormEvent } from "react";
 import { Link } from "react-router-dom";
 import API from "../api";
 import { toast } from "react-toastify";
-
 import styles from "./ForgotPassword.module.css";
 
 export default function ForgotPassword() {
@@ -21,13 +20,13 @@ export default function ForgotPassword() {
 
     try {
       await API.post("/forgot-password", { email: email.trim() });
-      toast.success("Reset link sent! Check your inbox.");
-      setEmail(""); // optional: clear field after success
+      toast.success("Reset link sent! Check your inbox ✉️");
+      setEmail("");
     } catch (err: any) {
-      const msg =
+      toast.error(
         err?.response?.data?.message ||
-        "Failed to send reset link. Please try again.";
-      toast.error(msg);
+          "Failed to send reset link. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -36,36 +35,39 @@ export default function ForgotPassword() {
   return (
     <div className={styles.wrapper}>
       <div className={styles.card}>
-        <h2 className={styles.title}>
-          <span>🔑</span> Forgot Password
-        </h2>
-
-        <p className={styles.subtitle}>
-          Enter your email and we'll send you a link to reset your password.
-        </p>
+        <div className={styles.header}>
+          <h2 className={styles.title}>
+            <span>🔑</span> Forgot password
+          </h2>
+          <p className={styles.subtitle}>
+            Enter your email and we’ll send you a reset link
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit}>
           <div className={styles.formGroup}>
             <input
               className={styles.input}
               type="email"
-              placeholder="your@email.com"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              autoFocus
               disabled={isSubmitting}
             />
           </div>
 
-          <button type="submit" className={styles.btn} disabled={isSubmitting}>
-            {isSubmitting ? "Sending..." : "Send Reset Link"}
+          <button className={styles.btn} disabled={isSubmitting}>
+            {isSubmitting ? "Sending..." : "Send reset link"}
           </button>
         </form>
 
-        <div className={styles.info}>
-          Remember your password? <Link to="/login">Back to Sign In</Link>
+        <div className={styles.footer}>
+          Remember your password?
+          <Link to="/login" className={styles.link}>
+            Sign in
+          </Link>
         </div>
       </div>
     </div>

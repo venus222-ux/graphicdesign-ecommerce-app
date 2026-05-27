@@ -1,134 +1,127 @@
-/* ../styles/Shop.module.css */
-
 .pageWrapper {
   min-height: 100vh;
-  background-color: #fcfcfd;
-  font-family:
-    "Inter",
-    system-ui,
-    -apple-system,
-    sans-serif;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  font-family: "Inter", system-ui, sans-serif;
 }
 
-/* Hero Section - More Modern Gradient & Layout */
+/* HERO */
 .hero {
   text-align: center;
-  padding: 100px 24px;
-  background:
-    radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(124, 58, 237, 0.05) 0px, transparent 50%);
-  border-bottom: 1px solid #f3f4f6;
-  margin-bottom: 40px;
+  padding: 90px 24px 70px;
+  background: radial-gradient(circle at top, #eef2ff 0%, transparent 60%);
+  border-bottom: 1px solid #eef2f7;
 }
 
 .hero h1 {
-  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-size: clamp(2.4rem, 4vw, 3.5rem);
   font-weight: 800;
-  color: #111827;
   letter-spacing: -0.04em;
-  margin-bottom: 16px;
+  color: #0f172a;
 }
 
 .heroSubtext {
-  font-size: 1.125rem;
-  color: #6b7280;
-  max-width: 600px;
-  margin: 0 auto;
+  margin-top: 12px;
+  font-size: 1.05rem;
+  color: #64748b;
+  max-width: 620px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
 }
 
-/* Grid Layout */
+/* LAYOUT */
 .mainLayout {
-  max-width: 1440px;
+  max-width: 1400px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 280px 1fr;
-  gap: 40px;
-  padding: 0 40px 80px;
+  gap: 32px;
+  padding: 0 28px 80px;
 }
 
+/* SIDEBAR AREA */
+aside {
+  position: sticky;
+  top: 24px;
+}
+
+/* MAIN AREA */
 .sectionTitle {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  color: #111827;
-  margin-bottom: 24px;
+  color: #0f172a;
+  margin-bottom: 18px;
 }
 
+/* PRODUCT GRID */
 .productGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
 }
 
-/* Buttons */
-.primaryBtn {
-  background: #2563eb;
-  color: white;
-  padding: 12px 28px;
-  border-radius: 12px;
-  font-weight: 600;
-  transition: all 0.2s;
-  border: none;
-  text-decoration: none;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+/* CARD WRAPPER ENHANCEMENT (works with ProductCard) */
+.productGrid > * {
+  transition: transform 0.2s ease;
 }
 
-.primaryBtn:hover {
-  background: #1d4ed8;
-  transform: translateY(-1px);
+.productGrid > *:hover {
+  transform: translateY(-4px);
 }
 
-.secondaryBtn {
-  background: white;
-  color: #374151;
-  padding: 12px 28px;
-  border-radius: 12px;
-  font-weight: 600;
-  border: 1px solid #e5e7eb;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
-.secondaryBtn:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
-}
-
-/* Skeleton Pulse */
+/* SKELETON */
 .skeleton {
-  background: #f3f4f6;
-  position: relative;
+  background: #ffffff;
+  border: 1px solid #eef2f7;
+  border-radius: 16px;
   overflow: hidden;
+  position: relative;
 }
 
-.skeleton::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  transform: translateX(-100%);
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.5),
-    transparent
-  );
-  animation: shimmer 1.5s infinite;
+.imageContainer {
+  height: 180px;
+  background: linear-gradient(90deg, #f1f5f9, #e2e8f0, #f1f5f9);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
 }
 
 @keyframes shimmer {
+  0% {
+    background-position: 0%;
+  }
   100% {
-    transform: translateX(100%);
+    background-position: 200%;
   }
 }
 
-/* Responsive */
+/* EMPTY STATE */
+.textCenter {
+  text-align: center;
+  padding: 80px 20px;
+  color: #64748b;
+}
+
+.textCenter span {
+  font-size: 1.1rem;
+  display: block;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+/* LOADING SPINNER WRAPPER */
+.loaderWrap {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+/* RESPONSIVE */
 @media (max-width: 1024px) {
   .mainLayout {
     grid-template-columns: 1fr;
-    padding: 0 20px;
+    padding: 0 16px 60px;
   }
+
   aside {
     display: none;
   }

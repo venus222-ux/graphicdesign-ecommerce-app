@@ -1,3 +1,5 @@
+// ProductCard.tsx
+
 import { Link } from "react-router-dom";
 import styles from "../../styles/ProductCard.module.css";
 import { Product } from "../../types";
@@ -8,99 +10,87 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
+  // Safe preview resolver
   const previewUrl = product?.preview_urls?.[0] || product?.preview_url || null;
 
-  // COMPREHENSIVE DISCOUNT CALCULATION
-  const hasDiscount = !!product.has_discount;
-  const finalPrice = product.final_price ?? product.price ?? 0;
-  const originalPrice = product.price ?? 0;
+  // Safe numeric conversions
+  const rating = Number(product.rating ?? 4.8);
 
-  // Determine label details based on discount mechanism type
-  let discountLabel = "";
-  if (hasDiscount) {
-    if (product.discount_percentage && product.discount_percentage > 0) {
-      discountLabel = `-${product.discount_percentage}%`;
-    } else if (product.discount_fixed && product.discount_fixed > 0) {
-      discountLabel = `-$${Number(product.discount_fixed).toFixed(0)}`;
-    } else if (
-      product.effective_discount_percentage &&
-      product.effective_discount_percentage > 0
-    ) {
-      discountLabel = `-${product.effective_discount_percentage}%`;
-    } else {
-      discountLabel = "SALE";
-    }
-  }
+  const finalPrice = Number(product.final_price ?? product.price ?? 0);
+
+  const originalPrice = Number(product.price ?? 0);
+
+  // Validate real discount existence
+  const hasDiscount =
+    !!product.has_discount && originalPrice > 0 && finalPrice < originalPrice;
+
+  // Prevent NaN / broken calculations
+  const discountPercent =
+    hasDiscount && originalPrice > 0
+      ? Math.round(((originalPrice - finalPrice) / originalPrice) * 100)
+      : 0;
 
   return (
     <div className={styles.card}>
-      <div className={styles.imageContainer}>
+      {/* MEDIA */}
+      <div className={styles.media}>
         {previewUrl ? (
           <img
             src={previewUrl}
             alt={product.title}
-            className={styles.productImg}
             loading="lazy"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "/placeholder.png";
+            }}
           />
         ) : (
-          <div className={styles.noPreview}>
-            <span>📷 No Preview Provided</span>
-          </div>
+          <div className={styles.noPreview}>No Preview</div>
         )}
 
-        {/* FLOATING ACTION BADGES */}
-        <div className={styles.badgeCluster}>
-          {hasDiscount && (
-            <div className={`${styles.badge} ${styles.discountBadge}`}>
-              {discountLabel}
-            </div>
-          )}
-          {product.is_new && (
-            <div className={`${styles.badge} ${styles.newBadge}`}>NEW</div>
-          )}
+        {/* Wishlist */}
+        <div className={styles.wishlist}>
+          <WishlistButton product={product} />
         </div>
 
-        {/* INTERACTIVE ACTIONS HOVER OVERLAY */}
-        <div className={styles.overlay}>
-          <Link to={`/products/${product.slug}`} className={styles.quickView}>
-            Quick View
-          </Link>
-        </div>
-      </div>
-
-      {/* METADATA CONTENT PROFILE CONTAINER */}
-      <div className={styles.cardBody}>
-        {product.category?.name && (
-          <span className={styles.categoryTag}>{product.category.name}</span>
+        {/* Discount Badge */}
+        {hasDiscount && discountPercent > 0 && (
+          <span className={styles.discountBadge}>{discountPercent}% OFF</span>
         )}
-        <h5 className={styles.productTitle} title={product.title}>
-          {product.title}
-        </h5>
       </div>
 
-      {/* FOOTER METRICS GRID */}
-      <div className={styles.cardFooter}>
-        <div className={styles.priceContainer}>
-          <span
-            className={`${styles.price} ${hasDiscount ? styles.finalPrice : styles.standardPrice}`}
-          >
-            ${Number(finalPrice).toFixed(2)}
-          </span>
+      {/* CONTENT */}
+      <div className={styles.content}>
+        {/* Meta */}
+        <div className={styles.meta}>
+          <span>{product.category?.name || "Digital"}</span>
 
-          {hasDiscount && originalPrice > finalPrice && (
-            <span className={styles.oldPrice}>
-              ${Number(originalPrice).toFixed(2)}
-            </span>
-          )}
+          <span>★ {rating.toFixed(1)}</span>
         </div>
 
-        <div className={styles.actions}>
-          <Link to={`/products/${product.slug}`} className={styles.detailsLink}>
-            Details →
-          </Link>
-          <div className={styles.wishlistWrapper}>
-            <WishlistButton product={product} />
+        {/* Title */}
+        <h3>{product.title}</h3>
+
+        {/* Description */}
+        <p>
+          {product.description ||
+            "Premium digital product crafted for modern creators."}
+        </p>
+
+        {/* Footer */}
+        <div className={styles.footer}>
+          <div className={styles.priceGroup}>
+            {hasDiscount && (
+              <span className={styles.oldPrice}>
+                ${originalPrice.toFixed(2)}
+              </span>
+            )}
+
+            <span className={styles.price}>${finalPrice.toFixed(2)}</span>
           </div>
+
+          <Link to={`/products/${product.slug}`} className={styles.button}>
+            View Product
+          </Link>
         </div>
       </div>
     </div>

@@ -181,4 +181,19 @@ public function orders()
     return $this->hasMany(Order::class);
 }
 
+// 👇 accessors to fetch Spatie Media URLs 👇
+    public function getPreviewUrlsAttribute(): array
+    {
+        return $this->getMedia('previews')
+            ->sortBy('order_column')
+            ->map(fn($m) => $m->getFullUrl())
+            ->toArray();
+    }
+
+    public function getPreviewUrlAttribute(): ?string
+    {
+        $urls = $this->preview_urls;
+        return $urls[0] ?? null;
+    }
+
 }

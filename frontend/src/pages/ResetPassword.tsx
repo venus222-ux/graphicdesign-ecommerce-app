@@ -3,13 +3,12 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import API from "../api";
 import { toast } from "react-toastify";
 import { useStore } from "../store/useStore";
-
 import styles from "./ResetPassword.module.css";
 
 export default function ResetPassword() {
-  // Try to get token from path or query
   const { token: tokenParam } = useParams();
   const [searchParams] = useSearchParams();
+
   const email = searchParams.get("email") || "";
   const token = searchParams.get("token") || tokenParam || "";
 
@@ -19,10 +18,12 @@ export default function ResetPassword() {
 
   const navigate = useNavigate();
 
-  // If token or email missing, show error immediately
+  const passwordsMatch =
+    password.length > 0 && password === passwordConfirmation;
+
   useEffect(() => {
     if (!token || !email) {
-      toast.error("Invalid password reset link");
+      toast.error("Invalid or expired password reset link");
     }
   }, [token, email]);
 
@@ -34,7 +35,7 @@ export default function ResetPassword() {
       return;
     }
 
-    if (password !== passwordConfirmation) {
+    if (!passwordsMatch) {
       toast.error("Passwords do not match");
       return;
     }
@@ -56,14 +57,14 @@ export default function ResetPassword() {
 
       useStore.getState().logout();
 
-      toast.success("Password reset successful! Please log in.");
+      toast.success("Password reset successful 🎉");
       navigate("/login");
     } catch (err: any) {
-      const msg =
+      toast.error(
         err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        "Password reset failed. Please try again.";
-      toast.error(msg);
+          err?.response?.data?.error ||
+          "Password reset failed",
+      );
     } finally {
       setLoading(false);
     }
@@ -72,17 +73,16 @@ export default function ResetPassword() {
   return (
     <div className={styles.wrapper}>
       <div className={styles.card}>
-        <h2 className={styles.title}>
-          <span>🔒</span> Reset Password
-        </h2>
-
-        <p className={styles.subtitle}>
-          Enter your new password for <strong>{email || "your account"}</strong>
-        </p>
+        <div className={styles.header}>
+          <h2 className={styles.title}>
+            <span>🔒</span> Reset password
+          </h2>
+          <p className={styles.subtitle}>
+            Set a new password for <strong>{email || "your account"}</strong>
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit}>
-          <input type="hidden" name="email" value={email} />
-
           <div className={styles.formGroup}>
             <input
               className={styles.input}
@@ -94,6 +94,7 @@ export default function ResetPassword() {
               minLength={6}
               autoComplete="new-password"
               autoFocus
+              disabled={loading}
             />
           </div>
 
@@ -106,11 +107,20 @@ export default function ResetPassword() {
               onChange={(e) => setPasswordConfirmation(e.target.value)}
               required
               autoComplete="new-password"
+              disabled={loading}
             />
+
+            {passwordConfirmation.length > 0 && (
+              <span className={passwordsMatch ? styles.success : styles.error}>
+                {passwordsMatch
+                  ? "✓ Passwords match"
+                  : "✗ Passwords do not match"}
+              </span>
+            )}
           </div>
 
-          <button type="submit" className={styles.btn} disabled={loading}>
-            {loading ? "Resetting..." : "Reset Password"}
+          <button className={styles.btn} disabled={loading}>
+            {loading ? "Resetting..." : "Reset password"}
           </button>
         </form>
       </div>

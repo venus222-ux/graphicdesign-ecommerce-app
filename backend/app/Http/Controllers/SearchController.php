@@ -56,7 +56,7 @@ class SearchController extends Controller
     ];
 });
         return response()->json([
-            'data'         => ProductSearchResource::collection($products),
+            'data'         => ProductSearchResource::collection($products)->resolve(),
             'total'        => $total,
             'current_page' => $page,
             'per_page'     => $size,

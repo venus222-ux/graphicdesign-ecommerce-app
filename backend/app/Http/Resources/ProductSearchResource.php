@@ -37,8 +37,10 @@ class ProductSearchResource extends JsonResource
             'slug'               => $resource->slug ?? null,
             'title'              => $resource->title ?? null,
             'price'              => $resource->price ?? null,
-            'final_price'        => $this->final_price ?? $this->price ?? null,
-            'old_price'          => $this->old_price ?? null,
+            // 👇 Change $this to $resource 👇
+            'final_price'        => $resource->final_price ?? $resource->price ?? null,
+            'old_price'          => $resource->old_price ?? null,
+            'discount_percentage'=> $resource->discount_percentage ?? null,
             'discount_percentage'=> $this->discount_percentage ?? null,
             'short_description'  => $resource->short_description ?? null,
             'description'        => $resource->description ?? null,

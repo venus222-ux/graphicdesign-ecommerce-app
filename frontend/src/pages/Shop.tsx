@@ -89,7 +89,6 @@ const Shop = () => {
               ))}
             </div>
           )}
-
           {!isLoading && totalResults === 0 && (
             <div
               className="text-center py-5 text-muted"

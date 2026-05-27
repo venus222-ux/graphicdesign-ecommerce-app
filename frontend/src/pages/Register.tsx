@@ -19,12 +19,14 @@ export default function Register() {
     password: "",
     password_confirmation: "",
   });
+
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
   const setAuth = useStore((state) => state.setAuth);
 
-  const passwordsMatch = form.password === form.password_confirmation;
+  const passwordsMatch =
+    form.password === form.password_confirmation && form.password.length > 0;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -50,18 +52,17 @@ export default function Register() {
       const { token, role } = response.data;
 
       setAuth(token, role);
-      toast.success("Registration successful!");
+      toast.success("Account created successfully 🎉");
+
       navigate(role === "admin" ? "/admin/dashboard" : "/dashboard");
     } catch (error: any) {
       if (error.response?.data?.errors) {
         const errors = error.response.data.errors;
         Object.keys(errors).forEach((key) => {
-          toast.error(`${key}: ${errors[key][0]}`);
+          toast.error(`${errors[key][0]}`);
         });
-      } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
       } else {
-        toast.error("Registration failed. Please try again.");
+        toast.error(error.response?.data?.message || "Registration failed");
       }
     } finally {
       setLoading(false);
@@ -73,104 +74,88 @@ export default function Register() {
       <div className={styles.card}>
         <div className={styles.header}>
           <h2 className={styles.title}>
-            <span>📝</span> Create Account
+            <span>✨</span> Create account
           </h2>
-          <p className={styles.subtitle}>Join our community today</p>
+          <p className={styles.subtitle}>
+            Join and start building something amazing
+          </p>
         </div>
 
         <form onSubmit={handleRegister}>
-          {/* Name */}
+          {/* NAME */}
           <div className={styles.formGroup}>
-            <label className={styles.label}>Full Name</label>
             <input
               className={styles.input}
-              placeholder="Enter your full name"
+              placeholder="Full name"
               name="name"
               value={form.name}
               onChange={handleChange}
-              required
               autoComplete="name"
+              required
             />
           </div>
 
-          {/* Email */}
+          {/* EMAIL */}
           <div className={styles.formGroup}>
-            <label className={styles.label}>Email Address</label>
             <input
               className={styles.input}
               type="email"
-              placeholder="you@example.com"
+              placeholder="Email address"
               name="email"
               value={form.email}
               onChange={handleChange}
-              required
               autoComplete="email"
+              required
             />
           </div>
 
-          {/* Password */}
+          {/* PASSWORD */}
           <div className={styles.formGroup}>
-            <label className={styles.label}>Password</label>
             <input
               className={styles.input}
               type="password"
-              placeholder="Minimum 6 characters"
+              placeholder="Password (min 6 chars)"
               name="password"
               value={form.password}
               onChange={handleChange}
-              required
-              minLength={6}
               autoComplete="new-password"
+              required
             />
           </div>
 
-          {/* Confirm Password with live feedback */}
+          {/* CONFIRM PASSWORD */}
           <div className={styles.formGroup}>
-            <label className={styles.label}>Confirm Password</label>
             <input
               className={styles.input}
               type="password"
-              placeholder="Re-enter your password"
+              placeholder="Confirm password"
               name="password_confirmation"
               value={form.password_confirmation}
               onChange={handleChange}
-              required
               autoComplete="new-password"
+              required
             />
-            {form.password_confirmation && (
-              <>
-                {passwordsMatch ? (
-                  <span className={styles.success}>✅ Passwords match</span>
-                ) : (
-                  <span className={styles.error}>
-                    ❌ Passwords do not match
-                  </span>
-                )}
-              </>
+
+            {form.password_confirmation.length > 0 && (
+              <span
+                className={passwordsMatch ? styles.success : styles.errorText}
+              >
+                {passwordsMatch
+                  ? "✓ Passwords match"
+                  : "✗ Passwords do not match"}
+              </span>
             )}
           </div>
 
-          {/* Submit */}
-          <button type="submit" className={styles.btn} disabled={loading}>
-            {loading ? (
-              <>
-                <span
-                  className={`${styles.spinner} spinner-border spinner-border-sm`}
-                  role="status"
-                  aria-hidden="true"
-                />
-                Creating Account...
-              </>
-            ) : (
-              "Register"
-            )}
+          <button className={styles.btn} disabled={loading}>
+            {loading ? "Creating account..." : "Create account"}
           </button>
         </form>
 
-        <div className={styles.linkContainer}>
-          Already have an account?{" "}
+        <div className={styles.footer}>
+          Already have an account?
           <Link to="/login" className={styles.link}>
-            Sign In
+            Sign in
           </Link>
         </div>
       </div>
