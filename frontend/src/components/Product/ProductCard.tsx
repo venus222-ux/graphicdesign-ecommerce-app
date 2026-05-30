@@ -13,9 +13,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
   // Safe preview resolver
   const previewUrl = product?.preview_urls?.[0] || product?.preview_url || null;
 
-  // Safe numeric conversions
-  const rating = Number(product.rating ?? 4.8);
-
   const finalPrice = Number(product.final_price ?? product.price ?? 0);
 
   const originalPrice = Number(product.price ?? 0);
@@ -63,8 +60,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
         {/* Meta */}
         <div className={styles.meta}>
           <span>{product.category?.name || "Digital"}</span>
-
-          <span>★ {rating.toFixed(1)}</span>
         </div>
 
         {/* Title */}

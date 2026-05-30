@@ -31,11 +31,13 @@ interface DashboardChartsProps {
 const DashboardCharts: React.FC<DashboardChartsProps> = ({ stats }) => {
   if (!stats) return <p>Loading charts...</p>;
 
-  // Format Line Chart Data (Revenue & Orders)
+  // ================= SALES =================
+  const sales = stats?.charts?.sales ?? [];
+
   const lineChartData = useMemo(() => {
-    const labels = stats.charts.sales.map((s: any) => s.date);
-    const revenue = stats.charts.sales.map((s: any) => s.revenue);
-    const orders = stats.charts.sales.map((s: any) => s.orders);
+    const labels = sales.map((s: any) => s.date);
+    const revenue = sales.map((s: any) => Number(s.revenue || 0));
+    const orders = sales.map((s: any) => Number(s.orders || 0));
 
     return {
       labels,
@@ -59,12 +61,14 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ stats }) => {
         },
       ],
     };
-  }, [stats]);
+  }, [sales]);
 
-  // Format Doughnut Chart Data (Traffic Sources)
+  // ================= TRAFFIC (SOURCE) =================
+  const traffic = stats?.charts?.traffic ?? [];
+
   const trafficChartData = useMemo(() => {
-    const labels = stats.charts.traffic.map((t: any) => t.source);
-    const data = stats.charts.traffic.map((t: any) => t.value);
+    const labels = traffic.map((t: any) => t.source);
+    const data = traffic.map((t: any) => Number(t.value || 0));
 
     return {
       labels,
@@ -72,16 +76,62 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ stats }) => {
         {
           data,
           backgroundColor: [
-            "#ef4444", // Google
-            "#3b82f6", // Facebook
-            "#10b981", // Direct
-            "#000000", // TikTok
+            "#3b82f6",
+            "#10b981",
+            "#f59e0b",
+            "#ef4444",
+            "#8b5cf6",
+            "#64748b",
           ],
           borderWidth: 0,
         },
       ],
     };
-  }, [stats]);
+  }, [traffic]);
+
+  // ================= BROWSER ANALYTICS =================
+  const browsers = stats?.charts?.traffic_browser ?? [];
+
+  const browserChartData = useMemo(() => {
+    const labels = browsers.map((b: any) => b.source);
+    const data = browsers.map((b: any) => Number(b.value || 0));
+
+    return {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: [
+            "#6366f1",
+            "#22c55e",
+            "#f97316",
+            "#ef4444",
+            "#14b8a6",
+          ],
+          borderWidth: 0,
+        },
+      ],
+    };
+  }, [browsers]);
+
+  // ================= DEVICE ANALYTICS =================
+  const devices = stats?.charts?.traffic_device ?? [];
+
+  const deviceChartData = useMemo(() => {
+    const labels = devices.map((d: any) => d.source);
+    const data = devices.map((d: any) => Number(d.value || 0));
+
+    return {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: ["#3b82f6", "#10b981", "#f59e0b"],
+          borderWidth: 0,
+        },
+      ],
+    };
+  }, [devices]);
 
   const lineOptions = {
     responsive: true,
@@ -99,31 +149,36 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ stats }) => {
   };
 
   return (
-    <div
-      className={styles.chartsGrid}
-      style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "24px" }}
-    >
-      {/* REVENUE & ORDERS OVER TIME */}
+    <div className={styles.chartsGrid} style={{ display: "grid", gap: "24px" }}>
+      {/* ================= SALES ================= */}
       <div className={styles.glassCard} style={{ padding: "20px" }}>
-        <h3 style={{ marginBottom: "16px" }}>Sales & Orders (Last 30 Days)</h3>
+        <h3>Sales & Orders (Last 30 Days)</h3>
         <div style={{ height: "300px" }}>
           <Line data={lineChartData} options={lineOptions} />
         </div>
       </div>
 
-      {/* TRAFFIC SOURCES */}
+      {/* ================= TRAFFIC ================= */}
       <div className={styles.glassCard} style={{ padding: "20px" }}>
-        <h3 style={{ marginBottom: "16px" }}>Traffic Sources</h3>
-        <div
-          style={{ height: "300px", display: "flex", justifyContent: "center" }}
-        >
-          <Doughnut
-            data={trafficChartData}
-            options={{
-              maintainAspectRatio: false,
-              plugins: { legend: { position: "bottom" } },
-            }}
-          />
+        <h3>Traffic Sources</h3>
+        <div style={{ height: "300px" }}>
+          <Doughnut data={trafficChartData} />
+        </div>
+      </div>
+
+      {/* ================= BROWSER ================= */}
+      <div className={styles.glassCard} style={{ padding: "20px" }}>
+        <h3>Browser Usage</h3>
+        <div style={{ height: "300px" }}>
+          <Doughnut data={browserChartData} />
+        </div>
+      </div>
+
+      {/* ================= DEVICE ================= */}
+      <div className={styles.glassCard} style={{ padding: "20px" }}>
+        <h3>Device Usage</h3>
+        <div style={{ height: "300px" }}>
+          <Doughnut data={deviceChartData} />
         </div>
       </div>
     </div>
