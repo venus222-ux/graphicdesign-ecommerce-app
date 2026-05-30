@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\MongoLog;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\TrafficLog;
+use App\Models\TrafficLogs;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -201,56 +203,75 @@ class AdminController extends Controller
 
 
 /* ================= DASHBOARD STATS ================= */
-    public function dashboardStats()
-    {
-        $today = now()->startOfDay();
-        $thisMonth = now()->startOfMonth();
+public function dashboardStats()
+{
+    $today = now()->startOfDay();
+    $thisMonth = now()->startOfMonth();
 
-        // Basic KPIs (Changed 'total_amount' to 'total')
-        $todayRevenue = Order::where('created_at', '>=', $today)->sum('total');
-        $monthRevenue = Order::where('created_at', '>=', $thisMonth)->sum('total');
-        $totalRevenue = Order::sum('total');
+    // ================= KPIs =================
+    $todayRevenue = Order::where('created_at', '>=', $today)->sum('total');
+    $monthRevenue = Order::where('created_at', '>=', $thisMonth)->sum('total');
+    $totalRevenue = Order::sum('total');
 
-        $totalOrders = Order::count();
-        $pendingOrders = Order::where('status', 'pending')->count();
-        $refundsCount = \App\Models\Refund::count();
+    $totalOrders = Order::count();
+    $pendingOrders = Order::where('status', 'pending')->count();
+    $refundsCount = \App\Models\Refund::count();
 
-        $newUsers = User::where('created_at', '>=', $thisMonth)->count();
+    $newUsers = User::where('created_at', '>=', $thisMonth)->count();
 
-        // Average Order Value
-        $aov = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
+    $aov = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
 
-        // Group Orders for Charts (Last 30 Days)
-        // (Changed SUM(total_amount) to SUM(total))
-        $salesData = Order::selectRaw('DATE(created_at) as date, SUM(total) as revenue, COUNT(id) as orders')
-            ->where('created_at', '>=', now()->subDays(30))
-            ->groupBy('date')
-            ->orderBy('date', 'asc')
-            ->get();
+    // ================= SALES CHART =================
+    $salesData = Order::selectRaw('DATE(created_at) as date, SUM(total) as revenue, COUNT(id) as orders')
+        ->where('created_at', '>=', now()->subDays(30))
+        ->groupBy('date')
+        ->orderBy('date', 'asc')
+        ->get();
 
-        return response()->json([
-            'kpis' => [
-                'today_revenue' => $todayRevenue,
-                'month_revenue' => $monthRevenue,
-                'total_revenue' => $totalRevenue,
-                'total_orders'  => $totalOrders,
-                'pending_orders'=> $pendingOrders,
-                'refunds'       => $refundsCount,
-                'new_users'     => $newUsers,
-                'aov'           => round($aov, 2),
-                'conversion_rate' => 2.4, // Mocked %
-                'products_sold' => 342,
-                'estimated_profit' => $totalRevenue * 0.4, // Mocked 40% margin
-            ],
-            'charts' => [
-                'sales' => $salesData,
-                'traffic' => [
-                    ['source' => 'Google', 'value' => 45],
-                    ['source' => 'Facebook', 'value' => 25],
-                    ['source' => 'Direct', 'value' => 20],
-                    ['source' => 'TikTok', 'value' => 10],
-                ]
-            ]
-        ]);
-    }
+    // ================= REAL TRAFFIC (SOURCE) =================
+    $trafficBySource = TrafficLog::selectRaw('source, COUNT(*) as value')
+        ->where('created_at', '>=', now()->subDays(30))
+        ->groupBy('source')
+        ->orderByDesc('value')
+        ->get();
+
+    // ================= REAL TRAFFIC (BROWSER) =================
+    $trafficByBrowser = TrafficLog::selectRaw('browser as source, COUNT(*) as value')
+        ->where('created_at', '>=', now()->subDays(30))
+        ->groupBy('browser')
+        ->orderByDesc('value')
+        ->get();
+
+    // ================= REAL TRAFFIC (DEVICE) =================
+    $trafficByDevice = TrafficLog::selectRaw('device as source, COUNT(*) as value')
+        ->where('created_at', '>=', now()->subDays(30))
+        ->groupBy('device')
+        ->orderByDesc('value')
+        ->get();
+
+    // ================= RESPONSE =================
+    return response()->json([
+        'kpis' => [
+            'today_revenue' => $todayRevenue,
+            'month_revenue' => $monthRevenue,
+            'total_revenue' => $totalRevenue,
+            'total_orders'  => $totalOrders,
+            'pending_orders'=> $pendingOrders,
+            'refunds'       => $refundsCount,
+            'new_users'     => $newUsers,
+            'aov'           => round($aov, 2),
+            'conversion_rate' => 2.4,
+            'products_sold' => 342,
+            'estimated_profit' => $totalRevenue * 0.4,
+        ],
+        'charts' => [
+            'sales' => $salesData,
+
+            // 🔥 REAL ANALYTICS
+            'traffic' => $trafficBySource,
+            'traffic_browser' => $trafficByBrowser,
+            'traffic_device' => $trafficByDevice,
+        ]
+    ]);
+}
 }

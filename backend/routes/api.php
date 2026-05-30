@@ -35,7 +35,6 @@ Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 
 
 
-
 // Protected routes with auth + throttle
 Route::middleware(['jwt.auth'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);

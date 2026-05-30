@@ -11,7 +11,6 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-
     ->withMiddleware(function (Middleware $middleware): void {
 
         // Global middleware
@@ -21,10 +20,13 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
         ]);
 
+     
+
         // API group
         $middleware->group('api', [
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \Illuminate\Routing\Middleware\ThrottleRequests::class . ':api',
+            \App\Http\Middleware\TrackTraffic::class,
         ]);
 
         // JWT alias 👇
@@ -33,7 +35,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'     => \App\Http\Middleware\AdminMiddleware::class,
         ]);
     })
-
     ->withExceptions(function (Exceptions $exceptions): void {
 
         // Clean JSON errors for API
@@ -49,6 +50,4 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
     })
-
-
     ->create();
