@@ -28,8 +28,14 @@ const Shop = () => {
     );
 
     if (observerRef.current) observer.observe(observerRef.current);
+
     return () => observer.disconnect();
   }, [hasNextPage, fetchNextPage]);
+
+  // ⭐ Scroll to top when results change (filters / search / sort)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [data?.pages?.[0]?.total]);
 
   return (
     <div className={styles.pageWrapper}>
@@ -55,11 +61,13 @@ const Shop = () => {
               : "No products found"}
           </h2>
 
+          {/* Loading skeleton */}
           {isLoading && (
             <div className={styles.productGrid}>
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className={`${styles.card} ${styles.skeleton}`}>
                   <div className={styles.imageContainer} />
+
                   <div
                     style={{
                       height: "14px",
@@ -68,6 +76,7 @@ const Shop = () => {
                       borderRadius: "4px",
                     }}
                   />
+
                   <div
                     className="mt-3"
                     style={{
@@ -82,6 +91,7 @@ const Shop = () => {
             </div>
           )}
 
+          {/* Products grid */}
           {!isLoading && products.length > 0 && (
             <div className={styles.productGrid}>
               {products.map((product) => (
@@ -89,6 +99,8 @@ const Shop = () => {
               ))}
             </div>
           )}
+
+          {/* Empty state */}
           {!isLoading && totalResults === 0 && (
             <div
               className="text-center py-5 text-muted"
@@ -101,7 +113,7 @@ const Shop = () => {
             </div>
           )}
 
-          {/* Infinite Scroll Loader */}
+          {/* Infinite scroll trigger */}
           {products.length > 0 && (
             <div ref={observerRef} className="text-center py-5">
               {isFetchingNextPage && (

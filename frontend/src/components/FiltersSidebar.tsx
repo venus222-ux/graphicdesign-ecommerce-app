@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useMarketplaceStore } from "../store/useMarketplaceStore";
 import styles from "../styles/FiltersSidebar.module.css";
 
@@ -13,6 +14,28 @@ const FiltersSidebar = () => {
     setFilters,
     resetFilters,
   } = useMarketplaceStore();
+
+  // ⭐ Local state (prevents instant API calls)
+  const [localMin, setLocalMin] = useState(minPrice ?? "");
+  const [localMax, setLocalMax] = useState(maxPrice ?? "");
+
+  // Sync store → local state when filters change externally
+  useEffect(() => {
+    setLocalMin(minPrice ?? "");
+    setLocalMax(maxPrice ?? "");
+  }, [minPrice, maxPrice]);
+
+  // ⭐ Debounce update to global store
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setFilters({
+        minPrice: localMin === "" ? null : Number(localMin),
+        maxPrice: localMax === "" ? null : Number(localMax),
+      });
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [localMin, localMax, setFilters]);
 
   return (
     <aside className={styles.sidebar}>
@@ -57,7 +80,7 @@ const FiltersSidebar = () => {
         </select>
       </div>
 
-      {/* Price Range */}
+      {/* Price Range (debounced) */}
       <div className={styles.section}>
         <label className={styles.label}>Price Range</label>
         <div className={styles.priceGrid}>
@@ -65,28 +88,20 @@ const FiltersSidebar = () => {
             type="number"
             className={styles.input}
             placeholder="Min"
-            value={minPrice ?? ""}
-            onChange={(e) =>
-              setFilters({
-                minPrice: e.target.value ? Number(e.target.value) : null,
-              })
-            }
+            value={localMin}
+            onChange={(e) => setLocalMin(e.target.value)}
           />
           <input
             type="number"
             className={styles.input}
             placeholder="Max"
-            value={maxPrice ?? ""}
-            onChange={(e) =>
-              setFilters({
-                maxPrice: e.target.value ? Number(e.target.value) : null,
-              })
-            }
+            value={localMax}
+            onChange={(e) => setLocalMax(e.target.value)}
           />
         </div>
       </div>
 
-      {/* Asset Type Selection */}
+      {/* Asset Type */}
       <div className={styles.section}>
         <label className={styles.label}>Asset Type</label>
         <div className={styles.pillContainer}>
@@ -94,9 +109,13 @@ const FiltersSidebar = () => {
             <button
               key={type}
               type="button"
-              className={`${styles.pill} ${assetType === type ? styles.pillActive : ""}`}
+              className={`${styles.pill} ${
+                assetType === type ? styles.pillActive : ""
+              }`}
               onClick={() =>
-                setFilters({ assetType: assetType === type ? null : type })
+                setFilters({
+                  assetType: assetType === type ? null : type,
+                })
               }
             >
               {type}
@@ -105,7 +124,7 @@ const FiltersSidebar = () => {
         </div>
       </div>
 
-      {/* Sort Footer */}
+      {/* Sort */}
       <div className={styles.footer}>
         <label className={styles.label}>Sort By</label>
         <select

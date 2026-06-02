@@ -28,7 +28,9 @@ try {
                 'slug'              => $product->slug,
                 'description'       => $product->description,
                 'short_description' => $product->short_description ?? null,
-                'price'             => $product->price,
+                'price' => (float) $product->price,
+                'final_price' => (float) $product->final_price, // Index the calculated price
+                'on_sale' => (bool) $product->hasActiveDiscount(),
                 'category_id'       => $product->category_id,
                 'category_name'     => $product->category?->name,
                 'asset_type'        => $product->asset_type,
@@ -47,7 +49,7 @@ try {
     }
 }
 
-public function search($query, $filters = [], $from = 0, $size = 12)
+public function search($query, $filters = [], $from = 0, $size = 12, $sort = 'newest')
 {
     $must = [];
     $filter = [];
@@ -66,20 +68,52 @@ public function search($query, $filters = [], $from = 0, $size = 12)
 
     // 🎯 FILTERS
     if (!empty($filters['category'])) {
-        $filter[] = ['term' => ['category_id' => $filters['category']]];
+        $filter[] = [
+            'term' => ['category_id' => $filters['category']]
+        ];
     }
 
     if (!empty($filters['asset_type'])) {
-        $filter[] = ['term' => ['asset_type' => $filters['asset_type']]];
+        $filter[] = [
+            'term' => ['asset_type' => $filters['asset_type']]
+        ];
     }
 
     if (!empty($filters['min_price']) || !empty($filters['max_price'])) {
         $range = [];
-        if (!empty($filters['min_price'])) $range['gte'] = $filters['min_price'];
-        if (!empty($filters['max_price'])) $range['lte'] = $filters['max_price'];
 
-        $filter[] = ['range' => ['price' => $range]];
+        if (!empty($filters['min_price'])) {
+            $range['gte'] = $filters['min_price'];
+        }
+
+        if (!empty($filters['max_price'])) {
+            $range['lte'] = $filters['max_price'];
+        }
+
+        $filter[] = [
+            'range' => [
+                'price' => $range
+            ]
+        ];
     }
+
+    // ⭐ SORT OPTIONS
+    $sortOptions = [
+        'newest'    => ['created_at' => ['order' => 'desc']],
+        'price_asc' => ['price' => ['order' => 'asc']],
+        'price_desc'=> ['price' => ['order' => 'desc']],
+        '_score'    => '_score',
+    ];
+
+    // If searching, prioritize relevance then apply selected sort
+    $sortClause = $query
+        ? [
+            $sortOptions['_score'],
+            $sortOptions[$sort] ?? $sortOptions['newest']
+        ]
+        : [
+            $sortOptions[$sort] ?? $sortOptions['newest']
+        ];
 
     return $this->client->search([
         'index' => config('services.elasticsearch.index'),
@@ -94,13 +128,10 @@ public function search($query, $filters = [], $from = 0, $size = 12)
                 ]
             ],
 
-            // ⭐ SORT
-            'sort' => [
-                '_score',
-                ['created_at' => 'desc']
-            ],
+            // ⭐ DYNAMIC SORT
+            'sort' => $sortClause,
 
-            // 📊 AGGREGATIONS (categories sidebar)
+            // 📊 AGGREGATIONS
             'aggs' => [
                 'categories' => [
                     'terms' => [
@@ -145,7 +176,9 @@ public function delete(int $id): void
             'id' => $product->id,
             'slug'              => $product->slug,
             'description'       => $product->description,
-            'price'             => $product->price,
+             'price' => (float) $product->price,
+            'final_price' => (float) $product->final_price, // Index the calculated price
+            'on_sale' => (bool) $product->hasActiveDiscount(),
             'category_id'       => $product->category_id,
             'asset_type'        => $product->asset_type,
 

@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, keepPreviousData } from "@tanstack/react-query";
 import API from "../api";
 import { useMarketplaceStore } from "../store/useMarketplaceStore";
 import { useDebounce } from "./useDebounce";
@@ -51,12 +51,17 @@ export const useProducts = () => {
         : undefined;
     },
 
+    // ⭐ prevents UI flicker when switching filters/search
+    placeholderData: keepPreviousData,
+
+    // ⭐ reduces unnecessary re-renders (important for big product grids)
+    notifyOnChangeProps: ["data", "isFetching"],
+
     staleTime: 1000 * 60 * 2, // 2 min
     gcTime: 1000 * 60 * 10, // 10 min
     refetchOnWindowFocus: false,
   });
 };
-
 /***
  * 👉 fetch de produse din API
 👉 cu filtre + search

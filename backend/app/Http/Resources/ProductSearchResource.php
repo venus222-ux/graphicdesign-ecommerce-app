@@ -6,49 +6,26 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProductSearchResource extends JsonResource
 {
-    public function toArray($request)
-    {
-        $resource = $this->resource;
+public function toArray($request)
+{
+    // Use $this->resource to access the object directly
+    $r = $this->resource;
 
-        // --- Previews ---
-        $previewUrls = [];
+    return [
+        'id'                => $r->id ?? null,
+        'slug'              => $r->slug ?? null,
+        'title'             => $r->title ?? null,
+        'price'             => (float) ($r->price ?? 0),
+        'final_price'       => (float) ($r->final_price ?? $r->price ?? 0),
+        'asset_type'        => $r->asset_type ?? 'Premium',
+        'preview_url'       => $r->preview_urls[0] ?? $r->preview_url ?? null,
+        'preview_urls'      => $r->preview_urls ?? [],
 
-        // Dacă avem multiple imagini în MediaLibrary (sau JSON)
-        if (!empty($resource->preview_urls) && is_array($resource->preview_urls)) {
-            $previewUrls = $resource->preview_urls;
-        } elseif (!empty($resource->preview_url)) {
-            // fallback la single preview
-            $previewUrls[] = $resource->preview_url;
-        }
+        // Safely check if category_name exists on the object
+        'category'          => isset($r->category_name) ? ['name' => $r->category_name] : null,
 
-        $previewUrl = $previewUrls[0] ?? null;
-
-        // --- Category ---
-        // Dacă category este obiect, apelăm only(), altfel convertim la array
-        $category = null;
-        if (!empty($resource->category)) {
-            $category = is_object($resource->category) && method_exists($resource->category, 'only')
-                ? $resource->category->only(['id', 'name'])
-                : (array) $resource->category;
-        }
-
-        return [
-            'id'                 => $resource->id ?? null,
-            'slug'               => $resource->slug ?? null,
-            'title'              => $resource->title ?? null,
-            'price'              => $resource->price ?? null,
-            // 👇 Change $this to $resource 👇
-            'final_price'        => $resource->final_price ?? $resource->price ?? null,
-            'old_price'          => $resource->old_price ?? null,
-            'discount_percentage'=> $resource->discount_percentage ?? null,
-            'discount_percentage'=> $this->discount_percentage ?? null,
-            'short_description'  => $resource->short_description ?? null,
-            'description'        => $resource->description ?? null,
-            'asset_type'         => $resource->asset_type ?? 'Premium',
-            'score'              => $resource->score ?? null,
-            'preview_url'        => $previewUrl,
-            'preview_urls'       => $previewUrls,
-            'category'           => $category,
-        ];
-    }
+        'score'             => $r->score ?? null,
+        // ... rest of your fields
+    ];
+}
 }

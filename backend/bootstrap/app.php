@@ -20,7 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
         ]);
 
-     
+
 
         // API group
         $middleware->group('api', [
