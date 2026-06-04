@@ -48,7 +48,7 @@ return [
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'laravel_news_aggregator_platform'),
+            'database' => env('DB_DATABASE', 'laravel_graphicdesgin_ecom'),
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
             'unix_socket' => env('DB_SOCKET', ''),
@@ -120,7 +120,7 @@ return [
            // and if the environment variable is missing, default to the bridge
             'host'     => env('DB_MONGO_HOST', 'host.docker.internal'),
             'port'     => env('DB_MONGO_PORT', 27017),
-            'database' => env('DB_MONGO_DATABASE', 'news_aggregator'),
+            'database' => env('DB_MONGO_DATABASE', 'graphicdesgin_ecom'),
             'username' => env('DB_MONGO_USERNAME', ''),
             'password' => env('DB_MONGO_PASSWORD', ''),
             'options'  => [
