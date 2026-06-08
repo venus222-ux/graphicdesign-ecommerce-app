@@ -8,92 +8,68 @@ use Stripe\Checkout\Session as StripeSession;
 use App\Models\Order;
 use Illuminate\Support\Facades\Log;
 use App\Events\OrderPaid;
+use Throwable;
 
 class StripeWebhookController extends Controller
 {
     public function handle(Request $request)
     {
-        Log::info('=== STRIPE WEBHOOK RAW REQUEST ===', [
-            'has_payload' => !empty($request->getContent()),
-            'signature_present' => $request->header('Stripe-Signature') ? 'YES' : 'NO',
-            'ip' => $request->ip()
-        ]);
+        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+
+        Log::info('--- WEBHOOK HIT ---');
 
         $payload = $request->getContent();
         $sigHeader = $request->header('Stripe-Signature');
 
         try {
-            $event = Webhook::constructEvent(
-                $payload,
-                $sigHeader,
-                config('services.stripe.webhook_secret')
-            );
-
-            Log::info('✅ Webhook signature verified successfully', [
-                'event_type' => $event->type
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('❌ Webhook signature verification FAILED', [
-                'error' => $e->getMessage(),
-                'signature' => substr($sigHeader ?? '', 0, 50) . '...',
-            ]);
-
+            $webhookSecret = 'whsec_NYB0PQmY4WlgMF3O3YVHSPrmAXjLvOCo';
+            $event = Webhook::constructEvent($payload, $sigHeader, $webhookSecret);
+        } catch (Throwable $e) {
+            Log::error('❌ Webhook signature verification FAILED: ' . $e->getMessage());
             return response('Invalid signature', 400);
         }
 
-        // Only handle checkout completed
         if ($event->type === 'checkout.session.completed') {
-
             Log::info('✅ Processing checkout.session.completed');
 
             $sessionId = $event->data->object->id ?? null;
 
             try {
-                $session = StripeSession::retrieve([
-                    //'id' => $sessionId,
-                    'expand' => ['payment_intent']
-                ]);
+                Log::info('DEBUG: Retrieving Stripe session: ' . $sessionId);
+                $session = StripeSession::retrieve($sessionId, ['expand' => ['payment_intent']]);
 
-                $paymentIntentId = $session->payment_intent?->id ?? $session->payment_intent;
-
+                Log::info('DEBUG: Looking up order in DB...');
                 $order = Order::where('stripe_session_id', $sessionId)->first();
 
                 if (!$order) {
-                    Log::warning('Order not found for session', ['session_id' => $sessionId]);
+                    Log::warning('DEBUG: Order not found for session', ['session_id' => $sessionId]);
                     return response()->json(['status' => 'order_not_found'], 200);
                 }
 
                 if ($order->status !== 'paid') {
-                    $order->update([
-                        'status' => 'paid',
-                        'payment_intent_id' => $paymentIntentId,
-                    ]);
+                    Log::info('DEBUG: Order found, status is ' . $order->status . '. Updating...');
+                    $order->update(['status' => 'paid']);
 
-                    $this->grantAccess($order);
+                    Log::info("DEBUG: Dispatching to connection: redis, queue: emails");
 
-                    Log::info('💰 Order marked as PAID', ['order_id' => $order->id]);
+                    $job = new \App\Jobs\ProcessOrderPaid($order);
+                    $job->onConnection('redis')->onQueue('emails');
 
-                    event(new OrderPaid($order));
+                    dispatch($job);
 
-                    Log::info('🚀 OrderPaid event dispatched');
+                    Log::info('🚀 ProcessOrderPaid job dispatched to queue successfully');
+                } else {
+                    Log::info('DEBUG: Order already paid, skipping dispatch.');
                 }
-
-            } catch (\Exception $e) {
-                Log::error('Error processing webhook', [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]);
+            } catch (Throwable $e) {
+                // This is the critical change: \Throwable catches everything
+                Log::error('❌ FATAL ERROR in StripeWebhookController: ' . $e->getMessage());
+                Log::error('❌ File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+                Log::error('❌ Trace: ' . $e->getTraceAsString());
+                return response()->json(['status' => 'error', 'message' => 'Internal processing error'], 500);
             }
         }
 
         return response()->json(['status' => 'success']);
-    }
-
-    private function grantAccess($order)
-    {
-        foreach ($order->items as $item) {
-            $order->user->products()->syncWithoutDetaching($item->product_id);
-        }
     }
 }

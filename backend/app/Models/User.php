@@ -71,15 +71,16 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(Order::class);
     }
 
-    public function products()
-    {
-        return $this->belongsToMany(
-            Product::class,
-            'order_items',
-            'user_id',
-            'product_id'
-        )->withPivot('quantity', 'price');
-    }
+//  // THIS IS THE CAUSE
+// public function products()
+// {
+//     return $this->belongsToMany(
+//         Product::class,
+//         'order_items', // Laravel looks for 'user_id' in this table
+//         'user_id',     // Laravel looks for this column
+//         'product_id'
+//     )->withPivot('quantity', 'price');
+// }
 
     public function wishlistProducts()
     {
