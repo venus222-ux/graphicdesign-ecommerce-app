@@ -22,7 +22,7 @@ class StripeWebhookController extends Controller
         $sigHeader = $request->header('Stripe-Signature');
 
         try {
-            $webhookSecret = 'whsec_NYB0PQmY4WlgMF3O3YVHSPrmAXjLvOCo';
+            $webhookSecret = '';
             $event = Webhook::constructEvent($payload, $sigHeader, $webhookSecret);
         } catch (Throwable $e) {
             Log::error('❌ Webhook signature verification FAILED: ' . $e->getMessage());
